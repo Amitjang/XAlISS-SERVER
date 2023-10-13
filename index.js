@@ -35,10 +35,9 @@ app.get('/get-account/:accountId', async (req, res, next) => {
 });
 
 app.get('/create-account', async (req, res, next) => {
+  const pair = StellarSdk.Keypair.random(); // Generate key pair
   // Create a new account
   try {
-    const pair = StellarSdk.Keypair.random(); // Generate key pair
-
     const res = await server.friendbot(pair.publicKey()).call();
     console.log('Account created ✅');
     console.log(res);
@@ -48,41 +47,45 @@ app.get('/create-account', async (req, res, next) => {
     });
   }
 
-  // try {
-  //   const account = await server.loadAccount(pair.publicKey());
+  try {
+    const account = await server.loadAccount(pair.publicKey());
+    console.log(
+      'GBVYATQXS4L45JTAIVRW3AOIJZX2NFGDLRVFGLQLBCBMNAH7Y54SAP44',
+      account.accountId()
+    );
 
-  //   const xoftAsset = new StellarSdk.Asset(
-  //     'XOFT',
-  //     'GBVYATQXS4L45JTAIVRW3AOIJZX2NFGDLRVFGLQLBCBMNAH7Y54SAP44'
-  //   ); // Create a trustline to the XOFT token
-  //   const transaction = new StellarSdk.TransactionBuilder(account, {
-  //     fee: 200,
-  //     networkPassphrase: StellarSdk.Networks.TESTNET,
-  //   })
-  //     .addOperation(
-  //       StellarSdk.Operation.changeTrust({
-  //         asset: xoftAsset,
-  //         limit: '1000', // Set your desired limit
-  //       })
-  //     )
-  //     .setTimeout(500)
-  //     .build();
+    const xoftAsset = new StellarSdk.Asset(
+      'XOFT',
+      'GA4JRGRE2ZR3INNBMMOS3IZVLC5DLTUVEAWVMWHTPB5ZHWRMGQPLZ2QG'
+    ); // Create a trustline to the XOFT token
+    const transaction = new StellarSdk.TransactionBuilder(account, {
+      fee: '100000',
+      networkPassphrase: StellarSdk.Networks.TESTNET,
+    })
+      .addOperation(
+        StellarSdk.Operation.changeTrust({
+          asset: xoftAsset,
+          limit: '100000', // Set your desired limit
+        })
+      )
+      .setTimeout(300)
+      .build();
 
-  //   transaction.sign(pair);
-  //   await server.submitTransaction(transaction); // Sign the transaction with your secret key
+    transaction.sign(pair);
+    const result = await server.submitTransaction(transaction); // Sign the transaction with your secret key
 
-  //   console.log('Trustline created successfully!', result);
+    console.log('Trustline created successfully!', result);
 
-  //   return res
-  //     .status(201)
-  //     .json({ message: 'Account created successfully', account });
-  // } catch (err) {
-  //   console.error('Error creating trustline:', err);
-  //   console.error('Extras:', err?.response?.data?.extras);
-  //   return res.status(400).json({
-  //     message: 'Error while creating account: ' + JSON.stringify(err),
-  //   });
-  // }
+    return res
+      .status(201)
+      .json({ message: 'Account created successfully', account });
+  } catch (err) {
+    console.error('Error creating trustline:', err);
+    console.error('Extras:', err?.response?.data?.extras);
+    return res.status(400).json({
+      message: 'Error while creating account: ' + JSON.stringify(err),
+    });
+  }
 });
 
 app.listen(PORT, () => {
