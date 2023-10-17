@@ -65,7 +65,7 @@ const createAccountSchema = z.object({
 
 const getAccountSchema = z.object({
   params: z.object({
-    userId: z.number({
+    userId: z.coerce.number({
       invalid_type_error: 'userId must be a number',
       required_error: 'userId is required',
     }),
