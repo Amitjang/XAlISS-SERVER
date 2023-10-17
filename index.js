@@ -3,6 +3,7 @@ const express = require('express');
 const morgan = require('morgan');
 
 const accountsRouter = require('./routes/account');
+const paymentRouter = require('./routes/payment');
 const healthRouter = require('./routes/health');
 
 dotenv.config();
@@ -18,7 +19,12 @@ if (nodeEnv === 'dev') {
   app.use(morgan('short'));
 }
 
+// Middlewares
+app.use(express.json());
+
+// Routes
 app.use('/api/accounts', accountsRouter);
+app.use('/api/payment', paymentRouter);
 app.use('/api/health', healthRouter);
 
 app.listen(PORT, () => {
