@@ -5,9 +5,15 @@ const {
   handleCreateAccount,
 } = require('../controllers/account');
 
+const {
+  createAccountSchema,
+  getAccountSchema,
+} = require('../validators/account');
+const validate = require('../middleware/validate');
+
 const router = express.Router();
 
-router.get('/:userId', handleGetAccount);
-router.post('/', handleCreateAccount);
+router.get('/:userId', validate(getAccountSchema), handleGetAccount);
+router.post('/', validate(createAccountSchema), handleCreateAccount);
 
 module.exports = router;

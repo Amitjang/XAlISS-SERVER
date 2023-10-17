@@ -2,8 +2,42 @@ const StellarSdk = require('stellar-sdk');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
+const CustomError = require('../utils/CustomError');
 
 async function handleCreateAccount(req, res) {
+  const {
+    dialCode,
+    phoneNumber,
+    name,
+    country,
+    state,
+    city,
+    pincode,
+    lat,
+    lng,
+  } = req.body;
+
+  // check if phone number is already in use
+  try {
+    const user = await prisma.users.findFirst({
+      where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
+    });
+    if (user) {
+      throw new CustomError({
+        code: 400,
+        message: `+${dialCode.trim()} ${phoneNumber.trim()} phone number is already in use`,
+      });
+    }
+  } catch (error) {
+    if (error instanceof CustomError) {
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    } else {
+      return res.status(500).json({ message: error, status: 'error' });
+    }
+  }
+
   const pair = StellarSdk.Keypair.random(); // Generate key pair
 
   // Create a new account
@@ -41,8 +75,16 @@ async function handleCreateAccount(req, res) {
     const user = await prisma.users.create({
       data: {
         account_id: account.id,
-        dial_code: '91',
-        phone_number: '1234567890',
+        account_secret: pair.secret(),
+        dial_code: dialCode.trim(),
+        phone_number: phoneNumber.trim(),
+        name: name.trim(),
+        country: country.trim(),
+        state: state.trim(),
+        city: city.trim(),
+        pincode: pincode.trim(),
+        lat: lat,
+        lng: lng,
       },
     });
 
