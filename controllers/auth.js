@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+
 const User = require('../models/User');
 const prisma = require('../services/prisma');
 
@@ -17,8 +19,8 @@ async function handleLogin(req, res) {
       });
     }
 
-    // TODO: add proper validation
-    if (pin.trim() !== '1234') {
+    const didPinMatch = await bcrypt.compare(pin.trim(), user.pin);
+    if (!didPinMatch) {
       throw new CustomError({
         code: 400,
         message: 'pin is invalid, enter correct pin',
