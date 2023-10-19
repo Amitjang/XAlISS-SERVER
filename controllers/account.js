@@ -1,20 +1,29 @@
 const StellarSdk = require('stellar-sdk');
+const bcrypt = require('bcryptjs');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
 const CustomError = require('../utils/CustomError');
+const User = require('../models/User');
 
 async function handleCreateAccount(req, res) {
   const {
     dialCode,
     phoneNumber,
     name,
+    email,
+    address,
     country,
     state,
     city,
     pincode,
     lat,
     lng,
+    gender,
+    occupation,
+    relativeDialCode,
+    relativePhoneNumber,
+    pin,
   } = req.body;
 
   // check if phone number is already in use
@@ -72,6 +81,8 @@ async function handleCreateAccount(req, res) {
     transaction.sign(pair);
     await server.submitTransaction(transaction); // Sign the transaction with your secret key
 
+    const hashedPin = await bcrypt.hash(pin.trim(), 10);
+
     const user = await prisma.users.create({
       data: {
         account_id: account.id,
@@ -79,18 +90,28 @@ async function handleCreateAccount(req, res) {
         dial_code: dialCode.trim(),
         phone_number: phoneNumber.trim(),
         name: name.trim(),
+        email: email.trim(),
+        address: address.trim(),
         country: country.trim(),
         state: state.trim(),
         city: city.trim(),
         pincode: pincode.trim(),
         lat: lat,
         lng: lng,
+        pin: hashedPin,
+        gender: gender.trim(),
+        occupation: occupation.trim(),
+        relative_dial_code: relativeDialCode.trim(),
+        relative_phone_number: relativePhoneNumber.trim(),
       },
     });
 
-    return res
-      .status(201)
-      .json({ message: 'User account created successfully', user: user });
+    const userRes = new User(user);
+
+    return res.status(201).json({
+      message: 'User account created successfully',
+      user: userRes.toJson(),
+    });
   } catch (err) {
     return res.status(400).json({
       message: 'Error while creating account: ' + JSON.stringify(err),

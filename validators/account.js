@@ -1,5 +1,7 @@
 const z = require('zod');
 
+const pinRegex = /^[0-9]+$/;
+
 const createAccountSchema = z.object({
   body: z.object({
     dialCode: z
@@ -24,6 +26,17 @@ const createAccountSchema = z.object({
       })
       .trim()
       .min(1, 'name cannot be empty'),
+    email: z
+      .string({ invalid_type_error: 'email must be a string' })
+      .email('email must be a valid email address')
+      .optional(),
+    address: z
+      .string({
+        invalid_type_error: 'address must be a string',
+        required_error: 'address is required',
+      })
+      .trim()
+      .min(1, 'address cannot be empty'),
     country: z
       .string({
         invalid_type_error: 'country must be a string',
@@ -36,8 +49,7 @@ const createAccountSchema = z.object({
         invalid_type_error: 'state must be a string',
         required_error: 'state is required',
       })
-      .trim()
-      .min(1, 'state cannot be empty'),
+      .optional(),
     city: z
       .string({
         invalid_type_error: 'city must be a string',
@@ -60,6 +72,41 @@ const createAccountSchema = z.object({
       invalid_type_error: 'lng must be a float',
       required_error: 'lng is required',
     }),
+    gender: z.enum(['Male', 'Female', 'Other'], {
+      invalid_type_error: 'gender must be a string',
+      required_error: 'gender is required',
+    }),
+    occupation: z
+      .string({
+        invalid_type_error: 'occupation must be a string',
+        required_error: 'occupation is required',
+      })
+      .min(1, 'occupation cannot be empty'),
+    relativeDialCode: z
+      .string({
+        invalid_type_error: 'relativeDialCode must be a string',
+        required_error: 'relativeDialCode is required',
+      })
+      .trim()
+      .min(1, 'relativeDialCode cannot be empty'),
+    relativePhoneNumber: z
+      .string({
+        invalid_type_error: 'relativePhoneNumber must be a string',
+        required_error: 'relativePhoneNumber is required',
+      })
+      .trim()
+      .min(10, 'relativePhoneNumber must be 10 characters only')
+      .max(10, 'relativePhoneNumber must be 10 characters only'),
+    pin: z
+      .string({
+        invalid_type_error: 'pin must be a string',
+        required_error: 'pin is required',
+      })
+      .trim()
+      .min(1, 'pin cannot be empty')
+      .regex(pinRegex, 'pin must only contain numbers')
+      .min(4, 'pin must be 4 characters long')
+      .max(4, 'pin must be 4 characters long'),
   }),
 });
 
