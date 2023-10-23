@@ -10,7 +10,7 @@ function validate(schema) {
     } catch (error) {
       return res
         .status(400)
-        .json({ errors: error.issues[0].message, status: 'error' });
+        .json({ message: error.issues[0].message, status: 'error' });
     }
   };
 }

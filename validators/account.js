@@ -55,8 +55,7 @@ const createAccountSchema = z.object({
         invalid_type_error: 'city must be a string',
         required_error: 'city is required',
       })
-      .trim()
-      .min(1, 'city cannot be empty'),
+      .optional(),
     pincode: z
       .string({
         invalid_type_error: 'pincode must be a string',
@@ -65,10 +64,12 @@ const createAccountSchema = z.object({
       .trim()
       .min(1, 'pincode cannot be empty'),
     lat: z.number({
+      coerce: true,
       invalid_type_error: 'lat must be a float',
       required_error: 'lat is required',
     }),
     lng: z.number({
+      coerce: true,
       invalid_type_error: 'lng must be a float',
       required_error: 'lng is required',
     }),
