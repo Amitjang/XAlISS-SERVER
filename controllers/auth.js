@@ -1,9 +1,11 @@
 const bcrypt = require('bcryptjs');
 
-const User = require('../models/User');
 const prisma = require('../services/prisma');
+const server = require('../services/stellar');
 
 const CustomError = require('../utils/CustomError');
+
+const User = require('../models/User');
 
 async function handleLogin(req, res) {
   const { dialCode, phoneNumber, pin } = req.body;
@@ -27,7 +29,10 @@ async function handleLogin(req, res) {
       });
     }
 
+    const account = await server.loadAccount(user.account_id);
+
     const userRes = new User(user);
+    userRes.addAccountDetails(account);
 
     return res.status(200).json({
       message: 'Logged in successfully',

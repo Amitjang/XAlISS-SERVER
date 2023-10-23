@@ -7,6 +7,8 @@ const CustomError = require('../utils/CustomError');
 const User = require('../models/User');
 
 async function handleCreateAccount(req, res) {
+  const file = req.file;
+  console.log('file:', file);
   const {
     dialCode,
     phoneNumber,
@@ -54,7 +56,7 @@ async function handleCreateAccount(req, res) {
     await server.friendbot(pair.publicKey()).call();
   } catch (error) {
     return res.status(500).json({
-      message: 'Error while creating account: ' + JSON.stringify(err),
+      message: 'Error while creating account: ' + JSON.stringify(error),
     });
   }
 
@@ -90,14 +92,14 @@ async function handleCreateAccount(req, res) {
         dial_code: dialCode.trim(),
         phone_number: phoneNumber.trim(),
         name: name.trim(),
-        email: email.trim(),
+        email: email?.trim(),
         address: address.trim(),
         country: country.trim(),
-        state: state.trim(),
-        city: city.trim(),
+        state: state?.trim(),
+        city: city?.trim(),
         pincode: pincode.trim(),
-        lat: lat,
-        lng: lng,
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
         pin: hashedPin,
         gender: gender.trim(),
         occupation: occupation.trim(),
@@ -113,8 +115,9 @@ async function handleCreateAccount(req, res) {
       user: userRes.toJson(),
     });
   } catch (err) {
+    console.log(err);
     return res.status(400).json({
-      message: 'Error while creating account: ' + JSON.stringify(err),
+      message: '(119) Error while creating account: ' + JSON.stringify(err),
     });
   }
 }
@@ -137,9 +140,14 @@ async function handleGetAccount(req, res) {
     }
 
     const account = await server.loadAccount(user.account_id);
-    return res
-      .status(200)
-      .json({ account, message: 'Successfully fetched account' });
+
+    const userRes = new User(user);
+    userRes.addAccountDetails(account);
+
+    return res.status(200).json({
+      message: 'Successfully fetched account',
+      user: userRes.toJson(),
+    });
   } catch (err) {
     return res
       .status(500)

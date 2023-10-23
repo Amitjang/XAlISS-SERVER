@@ -1,3 +1,5 @@
+const { AccountResponse } = require('stellar-sdk');
+
 class User {
   /**
    * @param {{ id: number, phone_number: string, dial_code: string, name: string, email: string, country: string, state: string, city: string, pincode: string, lat: number, lng: number, created_at: Date, updated_at: Date }} user user
@@ -48,6 +50,16 @@ class User {
     this.updated_at = updated_at;
   }
 
+  /**
+   * @param {AccountResponse} accountDetails account details
+   */
+  addAccountDetails({ balances, account_id, ...rest }) {
+    this.account = {
+      account_id: account_id,
+      balances: balances,
+    };
+  }
+
   toJson() {
     return {
       id: this.id,
@@ -66,6 +78,7 @@ class User {
       occupation: this.occupation,
       relative_dial_code: this.relative_dial_code,
       relative_phone_number: this.relative_phone_number,
+      account: this.account,
       created_at: this.created_at,
       updated_at: this.updated_at,
     };
