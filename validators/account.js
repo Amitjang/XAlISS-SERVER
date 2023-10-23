@@ -1,6 +1,7 @@
 const z = require('zod');
 
 const pinRegex = /^[0-9]+$/;
+const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
 
 const createAccountSchema = z.object({
   body: z.object({
@@ -108,6 +109,31 @@ const createAccountSchema = z.object({
       .regex(pinRegex, 'pin must only contain numbers')
       .min(4, 'pin must be 4 characters long')
       .max(4, 'pin must be 4 characters long'),
+    dateOfBirth: z
+      .string({
+        invalid_type_error: 'dateOfBirth must be a string',
+        required_error: 'dateOfBirth is required',
+      })
+      .trim()
+      .min(1, 'dateOfBirth cannot be empty')
+      .regex(dobRegex, 'dateOfBirth must be of format DD/MM/YYYY'),
+    verificationNumber: z
+      .string({
+        invalid_type_error: 'verificationNumber must be a string',
+        required_error: 'verificationNumber is required',
+      })
+      .trim()
+      .min(1, 'verificationNumber cannot be empty'),
+    transactionPin: z
+      .string({
+        invalid_type_error: 'transactionPin must be a string',
+        required_error: 'transactionPin is required',
+      })
+      .trim()
+      .min(1, 'transactionPin cannot be empty')
+      .regex(pinRegex, 'transactionPin must only contain numbers')
+      .min(4, 'transactionPin must be 4 characters long')
+      .max(4, 'transactionPin must be 4 characters long'),
   }),
 });
 

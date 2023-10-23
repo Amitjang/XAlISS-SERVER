@@ -26,6 +26,9 @@ async function handleCreateAccount(req, res) {
     relativeDialCode,
     relativePhoneNumber,
     pin,
+    verificationNumber,
+    dateOfBirth,
+    transactionPin,
   } = req.body;
 
   // check if phone number is already in use
@@ -84,6 +87,7 @@ async function handleCreateAccount(req, res) {
     await server.submitTransaction(transaction); // Sign the transaction with your secret key
 
     const hashedPin = await bcrypt.hash(pin.trim(), 10);
+    const hashedTransactionPin = await bcrypt.hash(transactionPin.trim(), 10);
 
     const user = await prisma.users.create({
       data: {
@@ -105,6 +109,9 @@ async function handleCreateAccount(req, res) {
         occupation: occupation.trim(),
         relative_dial_code: relativeDialCode.trim(),
         relative_phone_number: relativePhoneNumber.trim(),
+        verification_number: verificationNumber.trim(),
+        date_of_birth: dateOfBirth.trim(),
+        transaction_pin: hashedTransactionPin,
       },
     });
 
