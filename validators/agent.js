@@ -1,9 +1,8 @@
 const z = require('zod');
 
-const pinRegex = /^[0-9]+$/;
-const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+const { dobRegex, pinRegex } = require('../constants');
 
-const createAccountSchema = z.object({
+const createAgentSchema = z.object({
   body: z.object({
     dialCode: z
       .string({
@@ -137,13 +136,47 @@ const createAccountSchema = z.object({
   }),
 });
 
-const getAccountSchema = z.object({
+const getAgentSchema = z.object({
   params: z.object({
-    userId: z.coerce.number({
-      invalid_type_error: 'userId must be a number',
-      required_error: 'userId is required',
+    agentId: z.coerce.number({
+      invalid_type_error: 'agentId must be a number',
+      required_error: 'agentId is required',
     }),
   }),
 });
 
-module.exports = { createAccountSchema, getAccountSchema };
+const loginAgentSchema = z.object({
+  body: z.object({
+    dialCode: z
+      .string({
+        invalid_type_error: 'dialCode must be a string',
+        required_error: 'dialCode is required',
+      })
+      .trim()
+      .min(1, 'dialCode cannot be empty'),
+    phoneNumber: z
+      .string({
+        invalid_type_error: 'phoneNumber must be a string',
+        required_error: 'phoneNumber is required',
+      })
+      .trim()
+      .min(10, 'phoneNumber must be 10 characters long')
+      .max(10, 'phoneNumber must be 10 characters long'),
+    pin: z
+      .string({
+        invalid_type_error: 'pin must be a string',
+        required_error: 'pin is required',
+      })
+      .trim()
+      .min(1, 'pin cannot be empty')
+      .regex(pinRegex, 'pin must only contain numbers')
+      .min(4, 'pin must be 4 characters long')
+      .max(4, 'pin must be 4 characters long'),
+  }),
+});
+
+module.exports = {
+  createAccountSchema: createAgentSchema,
+  getAccountSchema: getAgentSchema,
+  loginAgentSchema,
+};

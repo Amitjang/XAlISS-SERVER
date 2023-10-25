@@ -1,4 +1,5 @@
 const StellarSdk = require('stellar-sdk');
+const bcrypt = require('bcryptjs');
 
 const prisma = require('../services/prisma');
 const server = require('../services/stellar');
@@ -6,15 +7,33 @@ const server = require('../services/stellar');
 const CustomError = require('../utils/CustomError');
 
 async function handleSendPayment(req, res) {
-  const { senderId, receiverId, amount } = req.body;
+  const {
+    senderDialCode,
+    senderPhoneNumber,
+    senderTransactionPin,
+    receiverDialCode,
+    receiverPhoneNumber,
+    amount,
+    purpose,
+  } = req.body;
+
+  console.log(purpose);
 
   let sender, receiver;
   try {
-    sender = await prisma.users.findFirst({ where: { id: senderId } });
+    sender = await prisma.users.findFirst({
+      where: {
+        dial_code: senderDialCode.trim(),
+        phone_number: senderPhoneNumber.trim(),
+      },
+    });
     if (!sender)
       throw new CustomError({
         code: 404,
-        message: `No sender found with id: ${senderId}`,
+        message: `No sender found with phone number: +${senderDialCode.replace(
+          '+',
+          ''
+        )} ${senderPhoneNumber}`,
       });
 
     if (sender.account_secret.trim().length === 0) {
@@ -25,12 +44,18 @@ async function handleSendPayment(req, res) {
     }
 
     receiver = await prisma.users.findFirst({
-      where: { id: receiverId },
+      where: {
+        dial_code: receiverDialCode.trim(),
+        phone_number: receiverPhoneNumber.trim(),
+      },
     });
     if (!receiver)
       throw new CustomError({
         code: 404,
-        message: `No receiver found with id: ${receiverId}`,
+        message: `No receiver found with phone number: +${receiverDialCode.replace(
+          '+',
+          ''
+        )} ${receiverPhoneNumber}`,
       });
   } catch (error) {
     if (error instanceof CustomError) {
@@ -50,7 +75,7 @@ async function handleSendPayment(req, res) {
   } catch (err) {
     if (err instanceof StellarSdk.NotFoundError) {
       return res.status(500).json({
-        message: 'The destination account does not exist!',
+        message: 'The sender account does not exist!',
         status: 'error',
       });
     } else
@@ -59,6 +84,16 @@ async function handleSendPayment(req, res) {
         status: 'error',
       });
   }
+
+  // check if transaction pin matches
+  const doesTransactionPinMatch = await bcrypt.compare(
+    senderTransactionPin,
+    sender.transaction_pin
+  );
+  if (!doesTransactionPinMatch)
+    return res
+      .status(400)
+      .json({ message: 'Invalid transaction pin 🗝️', status: 'error' });
 
   const keyPair = StellarSdk.Keypair.fromSecret(sender.account_secret);
 
@@ -85,7 +120,7 @@ async function handleSendPayment(req, res) {
     // And finally, send it off to Stellar!
     const result = await server.submitTransaction(transaction);
     console.log('Success! Results:', result);
-    return res.status(201).json({ message: '', status: 'success' });
+    return res.status(201).json({ message: 'Success', status: 'success' });
   } catch (error) {
     console.error('Something went wrong!', error);
     return res.status(500).json({ message: error, status: 'error' });

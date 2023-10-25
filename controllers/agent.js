@@ -3,17 +3,27 @@ const bcrypt = require('bcryptjs');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
-const CustomError = require('../utils/CustomError');
-const User = require('../models/User');
 
-async function handleCreateAccount(req, res) {
+const CustomError = require('../utils/CustomError');
+
+const Agent = require('../models/Agent');
+
+async function handleCreateAgent(req, res) {
   const file = req.file;
-  console.log('file:', file);
   const {
-    dialCode,
-    phoneNumber,
     name,
     email,
+    dialCode,
+    phoneNumber,
+    gender,
+    dateOfBirth,
+    occupation,
+    relativeDialCode,
+    relativePhoneNumber,
+    verificationNumber,
+    pin,
+    transactionPin,
+
     address,
     country,
     state,
@@ -21,22 +31,19 @@ async function handleCreateAccount(req, res) {
     pincode,
     lat,
     lng,
-    gender,
-    occupation,
-    relativeDialCode,
-    relativePhoneNumber,
-    pin,
-    verificationNumber,
-    dateOfBirth,
-    transactionPin,
   } = req.body;
+
+  if (!file)
+    return res
+      .status(400)
+      .json({ message: 'verification-proof is required', status: 'error' });
 
   // check if phone number is already in use
   try {
-    const user = await prisma.users.findFirst({
+    const agent = await prisma.agents.findFirst({
       where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
     });
-    if (user) {
+    if (agent) {
       throw new CustomError({
         code: 400,
         message: `+${dialCode.trim()} ${phoneNumber.trim()} phone number is already in use`,
@@ -89,7 +96,7 @@ async function handleCreateAccount(req, res) {
     const hashedPin = await bcrypt.hash(pin.trim(), 10);
     const hashedTransactionPin = await bcrypt.hash(transactionPin.trim(), 10);
 
-    const user = await prisma.users.create({
+    const agent = await prisma.agents.create({
       data: {
         account_id: account.id,
         account_secret: pair.secret(),
@@ -112,14 +119,15 @@ async function handleCreateAccount(req, res) {
         verification_number: verificationNumber.trim(),
         date_of_birth: dateOfBirth.trim(),
         transaction_pin: hashedTransactionPin,
+        verification_proof_image_url: file.filename,
       },
     });
 
-    const userRes = new User(user);
+    const agentRes = new Agent(agent);
 
     return res.status(201).json({
-      message: 'User account created successfully',
-      user: userRes.toJson(),
+      message: 'Agent created successfully',
+      agent: agentRes.toJson(),
     });
   } catch (err) {
     console.log(err);
@@ -129,31 +137,28 @@ async function handleCreateAccount(req, res) {
   }
 }
 
-async function handleGetAccount(req, res) {
-  const userId = req.params.userId;
+async function handleGetAgent(req, res) {
+  const agentId = req.params.agentId;
 
   try {
-    if (userId.trim().length === 0)
-      throw new Error('accountId cannot be empty');
-
-    const user = await prisma.users.findFirst({
-      where: { id: parseInt(userId, 10) },
+    const agent = await prisma.agents.findFirst({
+      where: { id: parseInt(agentId, 10) },
     });
 
-    if (!user) {
+    if (!agent) {
       return res
         .status(404)
-        .json({ message: 'No user found for id: ' + userId });
+        .json({ message: 'No agent found for id: ' + agentId });
     }
 
-    const account = await server.loadAccount(user.account_id);
+    const account = await server.loadAccount(agent.account_id);
 
-    const userRes = new User(user);
-    userRes.addAccountDetails(account);
+    const agentRes = new Agent(agent);
+    agentRes.addAccountDetails(account);
 
     return res.status(200).json({
       message: 'Successfully fetched account',
-      user: userRes.toJson(),
+      agent: agentRes.toJson(),
     });
   } catch (err) {
     return res
@@ -162,4 +167,53 @@ async function handleGetAccount(req, res) {
   }
 }
 
-module.exports = { handleCreateAccount, handleGetAccount };
+async function handleAgentLogin(req, res) {
+  const { dialCode, phoneNumber, pin } = req.body;
+
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { dial_code: dialCode, phone_number: phoneNumber },
+    });
+    if (!agent) {
+      throw new CustomError({
+        code: 404,
+        message: `No agent found with phone number: +${dialCode} ${phoneNumber}`,
+      });
+    }
+
+    const didPinMatch = await bcrypt.compare(pin.trim(), agent.pin);
+    if (!didPinMatch) {
+      throw new CustomError({
+        code: 400,
+        message: 'pin is invalid, enter correct pin',
+      });
+    }
+
+    const account = await server.loadAccount(agent.account_id);
+
+    const agentRes = new Agent(agent);
+    agentRes.addAccountDetails(account);
+
+    return res.status(200).json({
+      message: 'Logged in successfully',
+      status: 'success',
+      agent: agentRes.toJson(),
+    });
+  } catch (error) {
+    if (error instanceof CustomError) {
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    } else {
+      return res
+        .status(500)
+        .json({ message: error.toString(), status: 'error' });
+    }
+  }
+}
+
+module.exports = {
+  handleCreateAccount: handleCreateAgent,
+  handleGetAccount: handleGetAgent,
+  handleAgentLogin,
+};

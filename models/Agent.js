@@ -1,24 +1,17 @@
 const { AccountResponse } = require('stellar-sdk');
 
-class User {
+class Agent {
   /**
-   * @param {{
-   * id: number, agent_id: number, account_id: string, account_secret: string,
-   * name: string, dial_code: string, phone_number: string, verification_number: string,
-   * address: string, country: string, state: string, city: string, pincode: string, lat: number, lng: number,
-   * created_at: Date, updated_at: Date
-   *}} user user
+   * @param {{ id: number, phone_number: string, dial_code: string, name: string, email: string, country: string, state: string, city: string, pincode: string, lat: number, lng: number, verification_number: string, date_of_birth: string, transaction_pin: string, created_at: Date, updated_at: Date, }} agent agent
    */
   constructor({
     id,
     account_id,
     account_secret,
-
-    name,
     dial_code,
     phone_number,
-    verification_number,
-
+    name,
+    email,
     address,
     country,
     state,
@@ -26,19 +19,24 @@ class User {
     pincode,
     lat,
     lng,
-
+    pin,
+    gender,
+    occupation,
+    relative_dial_code,
+    relative_phone_number,
+    verification_number,
+    date_of_birth,
+    transaction_pin,
     created_at,
     updated_at,
   }) {
     this.id = id;
     this.account_id = account_id;
     this.account_secret = account_secret;
-
-    this.name = name;
-    this.dial_code = dial_code;
     this.phone_number = phone_number;
-    this.verification_number = verification_number;
-
+    this.dial_code = dial_code;
+    this.name = name;
+    this.email = email;
     this.address = address;
     this.country = country;
     this.state = state;
@@ -46,7 +44,14 @@ class User {
     this.pincode = pincode;
     this.lat = lat;
     this.lng = lng;
-
+    this.pin = pin;
+    this.gender = gender;
+    this.occupation = occupation;
+    this.relative_dial_code = relative_dial_code;
+    this.relative_phone_number = relative_phone_number;
+    this.verification_number = verification_number;
+    this.date_of_birth = date_of_birth;
+    this.transaction_pin = transaction_pin;
     this.created_at = created_at;
     this.updated_at = updated_at;
   }
@@ -64,10 +69,10 @@ class User {
   toJson() {
     return {
       id: this.id,
-      name: this.name,
-      dial_code: this.dial_code,
       phone_number: this.phone_number,
-
+      dial_code: this.dial_code,
+      name: this.name,
+      email: this.email,
       address: this.address,
       country: this.country,
       state: this.state,
@@ -75,13 +80,16 @@ class User {
       pincode: this.pincode,
       lat: this.lat,
       lng: this.lng,
-
+      gender: this.gender,
+      occupation: this.occupation,
+      relative_dial_code: this.relative_dial_code,
+      relative_phone_number: this.relative_phone_number,
+      date_of_birth: this.date_of_birth,
       account: this.account,
-
       created_at: this.created_at,
       updated_at: this.updated_at,
     };
   }
 }
 
-module.exports = User;
+module.exports = Agent;
