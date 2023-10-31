@@ -21,7 +21,7 @@ async function handleSendPayment(req, res) {
 
   let sender, receiver;
   try {
-    sender = await prisma.users.findFirst({
+    sender = await prisma.agents.findFirst({
       where: {
         dial_code: senderDialCode.trim(),
         phone_number: senderPhoneNumber.trim(),
@@ -30,7 +30,7 @@ async function handleSendPayment(req, res) {
     if (!sender)
       throw new CustomError({
         code: 404,
-        message: `No sender found with phone number: +${senderDialCode.replace(
+        message: `No agent found with phone number: +${senderDialCode.replace(
           '+',
           ''
         )} ${senderPhoneNumber}`,
