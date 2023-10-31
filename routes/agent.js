@@ -4,6 +4,7 @@ const {
   handleGetAccount,
   handleCreateAccount,
   handleAgentLogin,
+  handleGetAgentSecretKey,
 } = require('../controllers/agent');
 
 const upload = require('../services/multer');
@@ -12,6 +13,7 @@ const {
   createAccountSchema,
   getAccountSchema,
   loginAgentSchema,
+  getAgentSecretKeySchema,
 } = require('../validators/agent');
 const validate = require('../middleware/validate');
 
@@ -25,5 +27,10 @@ router.post(
   handleCreateAccount
 );
 router.post('/login', validate(loginAgentSchema), handleAgentLogin);
+router.post(
+  '/secret',
+  validate(getAgentSecretKeySchema),
+  handleGetAgentSecretKey
+);
 
 module.exports = router;

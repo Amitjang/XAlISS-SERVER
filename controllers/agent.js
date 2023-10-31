@@ -212,8 +212,50 @@ async function handleAgentLogin(req, res) {
   }
 }
 
+async function handleGetAgentSecretKey(req, res) {
+  const { dialCode, phoneNumber, transactionPin } = req.body;
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
+    });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No agent found with phone number +${dialCode.replace(
+          '+',
+          ''
+        )} ${phoneNumber}`,
+      });
+
+    const didMatch = await bcrypt.compare(
+      transactionPin.trim(),
+      agent.transaction_pin
+    );
+    if (!didMatch)
+      throw new CustomError({ code: 400, message: 'Invalid transaction pin' });
+
+    return res.status(200).json({
+      secretKey: agent.account_secret,
+      message: 'Success',
+      status: 'error',
+    });
+  } catch (error) {
+    if (error instanceof CustomError) {
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    } else {
+      return res.status(500).json({
+        message: err?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+    }
+  }
+}
+
 module.exports = {
   handleCreateAccount: handleCreateAgent,
   handleGetAccount: handleGetAgent,
   handleAgentLogin,
+  handleGetAgentSecretKey,
 };
