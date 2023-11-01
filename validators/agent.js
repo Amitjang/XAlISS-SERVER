@@ -96,8 +96,7 @@ const createAgentSchema = z.object({
           required_error: 'relativePhoneNumber is required',
         })
         .trim()
-        .min(10, 'relativePhoneNumber must be 10 characters only')
-        .max(10, 'relativePhoneNumber must be 10 characters only'),
+        .min(1, 'relativePhoneNumber cannot be empty'),
       pin: z
         .string({
           invalid_type_error: 'pin must be a string',
@@ -134,7 +133,24 @@ const createAgentSchema = z.object({
         .min(4, 'transactionPin must be 4 characters long')
         .max(4, 'transactionPin must be 4 characters long'),
     })
-    .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
+    .refine(
+      val =>
+        phoneNumberValidator({
+          dialCode: val.dialCode,
+          phoneNumber: val.phoneNumber,
+        }),
+      { message: 'phoneNumber is invalid' }
+    )
+    .refine(
+      val =>
+        phoneNumberValidator({
+          dialCode: val.relativeDialCode,
+          phoneNumber: val.relativePhoneNumber,
+        }),
+      {
+        message: 'relativePhoneNumber is invalid',
+      }
+    ),
 });
 
 const getAgentSchema = z.object({

@@ -1,10 +1,18 @@
 const express = require('express');
 
-const { handleCreateUser, handleGetUser } = require('../controllers/user');
+const {
+  handleCreateUser,
+  handleGetUser,
+  handleCreateContractUser,
+} = require('../controllers/user');
 
 const upload = require('../services/multer');
 
-const { getUserSchema, createUserSchema } = require('../validators/user');
+const {
+  getUserSchema,
+  createUserSchema,
+  createContractUserSchema,
+} = require('../validators/user');
 const validate = require('../middleware/validate');
 
 const router = express.Router();
@@ -15,6 +23,11 @@ router.post(
   upload.single('verification-proof'),
   validate(createUserSchema),
   handleCreateUser
+);
+router.post(
+  '/create-contract',
+  validate(createContractUserSchema),
+  handleCreateContractUser
 );
 
 module.exports = router;

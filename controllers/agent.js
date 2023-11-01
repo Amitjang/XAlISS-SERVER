@@ -237,7 +237,7 @@ async function handleGetAgentSecretKey(req, res) {
     return res.status(200).json({
       secretKey: agent.account_secret,
       message: 'Success',
-      status: 'error',
+      status: 'success',
     });
   } catch (error) {
     if (error instanceof CustomError) {

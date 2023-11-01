@@ -1,10 +1,17 @@
 const StellarSdk = require('stellar-sdk');
+const { request, response } = require('express');
+const { parseISO, parse } = require('date-fns');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
 
 const CustomError = require('../utils/CustomError');
 const User = require('../models/User');
+
+const {
+  getEndDateForContractType,
+  getSavingAndWithdrawTypeForContractType,
+} = require('../constants');
 
 async function handleCreateUser(req, res) {
   const file = req.file;
@@ -86,7 +93,7 @@ async function handleCreateUser(req, res) {
 
     const xoftAsset = new StellarSdk.Asset(
       'XOFT',
-      'GA4JRGRE2ZR3INNBMMOS3IZVLC5DLTUVEAWVMWHTPB5ZHWRMGQPLZ2QG'
+      'GAXNW7VF5RSYJLJHNQ7MDGV23RRPPM3QU6H27NDE7TTEM7QMPIGZPKDE'
     ); // Create a trustline to the XOFT token
     const transaction = new StellarSdk.TransactionBuilder(account, {
       fee: '100000',
@@ -187,4 +194,82 @@ async function handleGetUser(req, res) {
   }
 }
 
-module.exports = { handleCreateUser, handleGetUser };
+/**
+ * Create contract for the user
+ * @param {request} req request
+ * @param {response} res response
+ */
+async function handleCreateContractUser(req, res) {
+  const {
+    dialCode,
+    phoneNumber,
+    contractType,
+    amount,
+    comment,
+    firstPaymentDate,
+  } = req.body;
+
+  let user;
+  try {
+    user = await prisma.users.findFirst({
+      where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
+    });
+    if (!user)
+      throw new CustomError({
+        code: 404,
+        message: `No user found with phone number ${dialCode} ${phoneNumber}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
+
+  // save the contract
+  const { saving_type, withdraw_time } =
+    getSavingAndWithdrawTypeForContractType(contractType);
+  const endDate = getEndDateForContractType(contractType);
+  const first_payment_date = parse(firstPaymentDate, 'MM/dd/yyyy', new Date());
+
+  try {
+    const contract = await prisma.contracts.create({
+      data: {
+        user_id: user.id,
+        user_dial_code: user.dial_code,
+        user_phone_number: user.phone_number,
+
+        saving_type: saving_type,
+        withdraw_time: withdraw_time,
+
+        amount: parseFloat(amount),
+        comment: comment,
+
+        first_payment_date: first_payment_date.toISOString(),
+        end_date: endDate.toISOString(),
+      },
+    });
+
+    return res.status(201).json({
+      contract: contract,
+      message: 'Successfully created contract',
+      status: 'status',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error?.message ?? 'Something went wrong!',
+      status: 'error',
+    });
+  }
+}
+
+module.exports = {
+  handleCreateUser,
+  handleGetUser,
+  handleCreateContractUser,
+};

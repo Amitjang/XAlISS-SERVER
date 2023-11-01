@@ -1,6 +1,6 @@
 const z = require('zod');
 
-const { phoneNumberValidator } = require('../constants');
+const { phoneNumberValidator, CONTRACT_TYPES } = require('../constants');
 
 const createUserSchema = z.object({
   body: z
@@ -98,4 +98,52 @@ const getUserSchema = z.object({
   }),
 });
 
-module.exports = { createUserSchema, getUserSchema };
+const createContractUserSchema = z.object({
+  body: z
+    .object({
+      dialCode: z
+        .string({
+          invalid_type_error: 'dialCode must be a string',
+          required_error: 'dialCode is required',
+        })
+        .trim()
+        .min(1, 'dialCode cannot be empty'),
+      phoneNumber: z
+        .string({
+          invalid_type_error: 'phoneNumber must be a string',
+          required_error: 'phoneNumber is required',
+        })
+        .trim()
+        .min(1, 'phoneNumber cannot be empty'),
+      contractType: z.enum(CONTRACT_TYPES, {
+        invalid_type_error: `contractType can be: ${CONTRACT_TYPES.join(
+          ' | '
+        )}`,
+        required_error: 'contractType is required',
+      }),
+      amount: z
+        .number({
+          coerce: true,
+          invalid_type_error: 'amount must be a number',
+          required_error: 'amount is required',
+        })
+        .positive('amount cannot be negative'),
+      comment: z
+        .string({
+          invalid_type_error: 'comment must be a string',
+          required_error: 'comment is required',
+        })
+        .trim()
+        .min(1, 'comment cannot be empty'),
+      firstPaymentDate: z
+        .date({
+          coerce: true,
+          invalid_type_error: 'firstPaymentDate must be a date',
+          required_error: 'firstPaymentDate is required',
+        })
+        .min(new Date(), 'firstPaymentDate must be greater than today'),
+    })
+    .refine(phoneNumberValidator, 'phoneNumber is invalid'),
+});
+
+module.exports = { createUserSchema, getUserSchema, createContractUserSchema };
