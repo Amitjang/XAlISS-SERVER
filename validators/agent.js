@@ -193,6 +193,58 @@ const loginAgentSchema = z.object({
     .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
 });
 
+const forgotPinAgentSchema = z.object({
+  body: z
+    .object({
+      dialCode: z
+        .string({
+          invalid_type_error: 'dialCode must be a string',
+          required_error: 'dialCode is required',
+        })
+        .trim()
+        .min(1, 'dialCode cannot be empty'),
+      phoneNumber: z
+        .string({
+          invalid_type_error: 'phoneNumber must be a string',
+          required_error: 'phoneNumber is required',
+        })
+        .trim()
+        .min(1, 'phoneNumber cannot be empty'),
+    })
+    .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
+});
+
+const setNewPinAgentSchema = z.object({
+  body: z
+    .object({
+      dialCode: z
+        .string({
+          invalid_type_error: 'dialCode must be a string',
+          required_error: 'dialCode is required',
+        })
+        .trim()
+        .min(1, 'dialCode cannot be empty'),
+      phoneNumber: z
+        .string({
+          invalid_type_error: 'phoneNumber must be a string',
+          required_error: 'phoneNumber is required',
+        })
+        .trim()
+        .min(1, 'phoneNumber cannot be empty'),
+      pin: z
+        .string({
+          invalid_type_error: 'pin must be a string',
+          required_error: 'pin is required',
+        })
+        .trim()
+        .min(1, 'pin cannot be empty')
+        .regex(pinRegex, 'pin must only contain numbers')
+        .min(4, 'pin must be 4 characters long')
+        .max(4, 'pin must be 4 characters long'),
+    })
+    .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
+});
+
 const getAgentSecretKeySchema = z.object({
   body: z
     .object({
@@ -228,5 +280,7 @@ module.exports = {
   createAccountSchema: createAgentSchema,
   getAccountSchema: getAgentSchema,
   loginAgentSchema,
+  forgotPinAgentSchema,
+  setNewPinAgentSchema,
   getAgentSecretKeySchema,
 };

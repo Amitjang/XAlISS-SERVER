@@ -1,5 +1,6 @@
 const StellarSdk = require('stellar-sdk');
 const bcrypt = require('bcryptjs');
+const { request, response } = require('express');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
@@ -212,6 +213,83 @@ async function handleAgentLogin(req, res) {
   }
 }
 
+/**
+ * Forgot Pin Agent API
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleForgotPinAgent(req, res) {
+  const { dialCode, phoneNumber } = req.body;
+
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
+    });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No user found for phoneNumber: ${dialCode} ${phoneNumber}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError) {
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    } else {
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+    }
+  }
+
+  return res
+    .status(200)
+    .json({ message: 'Succesfully sent OTP', status: 'success' });
+}
+
+/**
+ * Set new PIN
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleSetNewPinAgent(req, res) {
+  const { dialCode, phoneNumber, pin } = req.body;
+
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { dial_code: dialCode.trim(), phone_number: phoneNumber.trim() },
+    });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No user found for phoneNumber: ${dialCode} ${phoneNumber}`,
+      });
+
+    const pinHash = await bcrypt.hash(pin.trim(), 8);
+
+    await prisma.agents.update({
+      data: { pin: pinHash },
+      where: { id: agent.id },
+    });
+  } catch (error) {
+    if (error instanceof CustomError) {
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    } else {
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+    }
+  }
+
+  return res
+    .status(200)
+    .json({ message: 'Successfully set new PIN', status: 'success' });
+}
+
 async function handleGetAgentSecretKey(req, res) {
   const { dialCode, phoneNumber, transactionPin } = req.body;
   try {
@@ -257,5 +335,7 @@ module.exports = {
   handleCreateAccount: handleCreateAgent,
   handleGetAccount: handleGetAgent,
   handleAgentLogin,
+  handleForgotPinAgent,
+  handleSetNewPinAgent,
   handleGetAgentSecretKey,
 };
