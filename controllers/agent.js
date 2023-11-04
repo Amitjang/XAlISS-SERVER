@@ -8,6 +8,7 @@ const prisma = require('../services/prisma');
 const CustomError = require('../utils/CustomError');
 
 const Agent = require('../models/Agent');
+const { xoftAsset } = require('../constants');
 
 async function handleCreateAgent(req, res) {
   const file = req.file;
@@ -74,10 +75,6 @@ async function handleCreateAgent(req, res) {
   try {
     const account = await server.loadAccount(pair.publicKey());
 
-    const xoftAsset = new StellarSdk.Asset(
-      'XOFT',
-      'GA4JRGRE2ZR3INNBMMOS3IZVLC5DLTUVEAWVMWHTPB5ZHWRMGQPLZ2QG'
-    ); // Create a trustline to the XOFT token
     const transaction = new StellarSdk.TransactionBuilder(account, {
       fee: '100000',
       networkPassphrase: StellarSdk.Networks.TESTNET,

@@ -1,5 +1,6 @@
 const { parsePhoneNumber } = require('libphonenumber-js');
-const { addMonths, addYears, addDays } = require('date-fns');
+const StellarSdk = require('stellar-sdk');
+const { addMonths, addYears } = require('date-fns');
 
 const pinRegex = /^[0-9]+$/;
 const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -74,6 +75,8 @@ const getSavingAndWithdrawTypeForContractType = contractType => {
   return { saving_type: saving_type, withdraw_time: withdraw_time };
 };
 
+const xoftAsset = new StellarSdk.Asset('XOFT', process.env.ISSUER_TOKEN); // Create a trustline to the XOFT token
+
 module.exports = {
   pinRegex,
   dobRegex,
@@ -81,4 +84,5 @@ module.exports = {
   CONTRACT_TYPES,
   getEndDateForContractType,
   getSavingAndWithdrawTypeForContractType,
+  xoftAsset,
 };
