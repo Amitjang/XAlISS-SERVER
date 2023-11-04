@@ -5,6 +5,7 @@ const prisma = require('../services/prisma');
 const server = require('../services/stellar');
 
 const CustomError = require('../utils/CustomError');
+const { xoftAsset } = require('../constants');
 
 async function handleSendPayment(req, res) {
   const {
@@ -95,6 +96,16 @@ async function handleSendPayment(req, res) {
       .status(400)
       .json({ message: 'Invalid transaction pin 🗝️', status: 'error' });
 
+  const senderBalance = senderAcc.balances.find(
+    el => el.asset_code === 'XOFT'
+  ).balance;
+  if (parseFloat(senderBalance) < amount.toFixed(7))
+    return res.status(400).json({
+      balance: parseFloat(senderBalance),
+      message: "You don't have enough balance to make a transaction",
+      status: 'error',
+    });
+
   const keyPair = StellarSdk.Keypair.fromSecret(sender.account_secret);
 
   // Start building the transaction.
@@ -106,7 +117,7 @@ async function handleSendPayment(req, res) {
       .addOperation(
         StellarSdk.Operation.payment({
           destination: receiver.account_id,
-          asset: StellarSdk.Asset.native(),
+          asset: xoftAsset,
           amount: String(amount?.toFixed(7)),
         })
       )
