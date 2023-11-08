@@ -1,6 +1,7 @@
 const z = require('zod');
 
 const { phoneNumberValidator, CONTRACT_TYPES } = require('../constants');
+const { subDays } = require('date-fns');
 
 const createUserSchema = z.object({
   body: z
@@ -115,6 +116,20 @@ const createContractUserSchema = z.object({
         })
         .trim()
         .min(1, 'phoneNumber cannot be empty'),
+      agentDialCode: z
+        .string({
+          invalid_type_error: 'agentDialCode must be a string',
+          required_error: 'agentDialCode is required',
+        })
+        .trim()
+        .min(1, 'agentDialCode cannot be empty'),
+      agentPhoneNumber: z
+        .string({
+          invalid_type_error: 'agentPhoneNumber must be a string',
+          required_error: 'agentPhoneNumber is required',
+        })
+        .trim()
+        .min(1, 'agentPhoneNumber cannot be empty'),
       contractType: z.enum(CONTRACT_TYPES, {
         invalid_type_error: `contractType can be: ${CONTRACT_TYPES.join(
           ' | '
@@ -141,9 +156,37 @@ const createContractUserSchema = z.object({
           invalid_type_error: 'firstPaymentDate must be a date',
           required_error: 'firstPaymentDate is required',
         })
-        .min(new Date(), 'firstPaymentDate must be greater than today'),
+        .min(
+          subDays(new Date(), 1),
+          'firstPaymentDate must be greater than or equal to today'
+        ),
+      address: z
+        .string({
+          invalid_type_error: 'address must be a string',
+          required_error: 'address is required',
+        })
+        .trim()
+        .min(1, 'address cannot be empty'),
+      lat: z.number({
+        coerce: true,
+        invalid_type_error: 'lat must be a number',
+        required_error: 'lat is required',
+      }),
+      lng: z.number({
+        coerce: true,
+        invalid_type_error: 'lng must be a number',
+        required_error: 'lng is required',
+      }),
     })
-    .refine(phoneNumberValidator, 'phoneNumber is invalid'),
+    .refine(phoneNumberValidator, 'phoneNumber is invalid')
+    .refine(
+      val =>
+        phoneNumberValidator({
+          dialCode: val.agentDialCode,
+          phoneNumber: val.agentPhoneNumber,
+        }),
+      { message: 'agentDialCode/agentPhoneNumber is invalid' }
+    ),
 });
 
 module.exports = { createUserSchema, getUserSchema, createContractUserSchema };

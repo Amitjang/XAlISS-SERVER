@@ -1,6 +1,6 @@
 const StellarSdk = require('stellar-sdk');
 const { request, response } = require('express');
-const { parseISO, parse } = require('date-fns');
+const { parse } = require('date-fns');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
@@ -11,6 +11,7 @@ const User = require('../models/User');
 const {
   getEndDateForContractType,
   getSavingAndWithdrawTypeForContractType,
+  xoftAsset,
 } = require('../constants');
 
 async function handleCreateUser(req, res) {
@@ -91,10 +92,7 @@ async function handleCreateUser(req, res) {
   try {
     const account = await server.loadAccount(pair.publicKey());
 
-    const xoftAsset = new StellarSdk.Asset(
-      'XOFT',
-      'GAXNW7VF5RSYJLJHNQ7MDGV23RRPPM3QU6H27NDE7TTEM7QMPIGZPKDE'
-    ); // Create a trustline to the XOFT token
+    // Create a trustline to the XOFT token
     const transaction = new StellarSdk.TransactionBuilder(account, {
       fee: '100000',
       networkPassphrase: StellarSdk.Networks.TESTNET,
@@ -200,14 +198,47 @@ async function handleGetUser(req, res) {
  * @param {response} res response
  */
 async function handleCreateContractUser(req, res) {
+  // TODO: add agent_id
   const {
     dialCode,
     phoneNumber,
+    agentDialCode,
+    agentPhoneNumber,
     contractType,
     amount,
     comment,
     firstPaymentDate,
+    address,
+    lat,
+    lng,
   } = req.body;
+
+  let agent;
+  try {
+    agent = await prisma.agents.findFirst({
+      where: {
+        dial_code: agentDialCode.trim(),
+        phone_number: agentPhoneNumber.trim(),
+      },
+    });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No agent found with phone number +${dialCode
+          .trim()
+          .replace('+', '')} ${phoneNumber.trim()}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
 
   let user;
   try {
@@ -232,15 +263,17 @@ async function handleCreateContractUser(req, res) {
   }
 
   // save the contract
+  const first_payment_date = parse(firstPaymentDate, 'MM/dd/yyyy', new Date());
   const { saving_type, withdraw_time } =
     getSavingAndWithdrawTypeForContractType(contractType);
-  const endDate = getEndDateForContractType(contractType);
-  const first_payment_date = parse(firstPaymentDate, 'MM/dd/yyyy', new Date());
+  const endDate = getEndDateForContractType(contractType, first_payment_date);
 
   try {
     const contract = await prisma.contracts.create({
       data: {
+        agent_id: agent.id,
         user_id: user.id,
+
         user_dial_code: user.dial_code,
         user_phone_number: user.phone_number,
 
@@ -252,6 +285,10 @@ async function handleCreateContractUser(req, res) {
 
         first_payment_date: first_payment_date.toISOString(),
         end_date: endDate.toISOString(),
+
+        address: address.trim(),
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
       },
     });
 

@@ -59,6 +59,7 @@ model agents {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model contracts {
   id                 Int       @id @default(autoincrement())
+  agent_id           Int?
   user_id            Int?
   user_dial_code     String?   @db.VarChar(20)
   user_phone_number  String?   @db.VarChar(50)
@@ -68,6 +69,9 @@ model contracts {
   first_payment_date DateTime? @db.Timestamp(0)
   comment            String?   @db.VarChar(255)
   end_date           DateTime? @db.Timestamp(0)
+  address            String?   @db.VarChar(255)
+  lat                Float?    @db.Float
+  lng                Float?    @db.Float
   created_at         DateTime  @default(now()) @db.Timestamp(0)
   updated_at         DateTime  @default(now()) @db.Timestamp(0)
 }
