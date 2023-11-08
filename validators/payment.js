@@ -19,8 +19,7 @@ const sendPaymentSchema = z.object({
           required_error: 'senderPhoneNumber is required',
         })
         .trim()
-        .min(10, 'senderPhoneNumber must be 10 characters only')
-        .max(10, 'senderPhoneNumber must be 10 characters only'),
+        .min(1, 'senderPhoneNumber cannot be empty'),
       senderTransactionPin: z
         .string({
           invalid_type_error: 'senderTransactionPin must be a string',
@@ -44,8 +43,7 @@ const sendPaymentSchema = z.object({
           required_error: 'receiverPhoneNumber is required',
         })
         .trim()
-        .min(10, 'receiverPhoneNumber must be 10 characters only')
-        .max(10, 'receiverPhoneNumber must be 10 characters only'),
+        .min(1, 'receiverPhoneNumber cannot be empty'),
       amount: z
         .number({
           invalid_type_error: 'amount must be a number',
@@ -84,4 +82,27 @@ const sendPaymentSchema = z.object({
     ),
 });
 
-module.exports = { sendPaymentSchema };
+const getTodayPendingCollectionsSchema = z.object({
+  query: z
+    .object({
+      dialCode: z
+        .string({
+          invalid_type_error: 'dialCode must be a string',
+          required_error: 'dialCode is required',
+        })
+        .trim()
+        .min(1, 'dialCode cannot be empty'),
+      phoneNumber: z
+        .string({
+          invalid_type_error: 'phoneNumber must be a string',
+          required_error: 'phoneNumber is required',
+        })
+        .trim()
+        .min(1, 'phoneNumber cannot be empty'),
+    })
+    .refine(phoneNumberValidator, {
+      message: 'dialCode/phoneNumber is invalid',
+    }),
+});
+
+module.exports = { sendPaymentSchema, getTodayPendingCollectionsSchema };

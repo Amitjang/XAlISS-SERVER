@@ -1,5 +1,15 @@
 const StellarSdk = require('stellar-sdk');
 const bcrypt = require('bcryptjs');
+const { request, response } = require('express');
+const {
+  isToday,
+  eachDayOfInterval,
+  eachWeekOfInterval,
+  eachMonthOfInterval,
+  closestTo,
+  getDay,
+  isFuture,
+} = require('date-fns');
 
 const prisma = require('../services/prisma');
 const server = require('../services/stellar');
@@ -141,4 +151,93 @@ async function handleSendPayment(req, res) {
   }
 }
 
-module.exports = { handleSendPayment };
+/**
+ * Get Today's collections, the agent has to collect
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetTodayPendingCollections(req, res) {
+  const { dialCode, phoneNumber } = req.query;
+
+  let collections = [];
+  let contracts;
+  let today = new Date();
+  today.setHours(0, 0, 0);
+
+  let agent;
+  try {
+    agent = await prisma.agents.findFirst({
+      where: {
+        dial_code: `+${dialCode.trim().replace('+', '')}`,
+        phone_number: phoneNumber.trim(),
+      },
+    });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No agent found for phone number: +${dialCode
+          .trim()
+          .replace('+', '')} ${phoneNumber.trim()}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
+
+  try {
+    contracts = await prisma.contracts.findMany({
+      where: { agent_id: agent.id, end_date: { gte: today } },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error?.message ?? 'Something went wrong!',
+      status: 'error',
+    });
+  }
+
+  contracts.forEach(contract => {
+    if (!isFuture(contract.end_date)) return;
+
+    if (contract.saving_type === 'daily') {
+      const dailyIntervals = eachDayOfInterval({
+        start: contract.first_payment_date,
+        end: contract.end_date,
+      });
+      const nextPaymentDate = closestTo(today, dailyIntervals);
+
+      if (isToday(nextPaymentDate)) collections.push(contract);
+    } else if (contract.saving_type === 'weekly') {
+      const weekIntervals = eachWeekOfInterval(
+        {
+          start: contract.first_payment_date,
+          end: contract.end_date,
+        },
+        { weekStartsOn: getDay(contract.first_payment_date) }
+      );
+      const nextPaymentDate = closestTo(today, weekIntervals);
+
+      if (isToday(nextPaymentDate)) contracts.push(contract);
+    } else if (contract.saving_type === 'monthly') {
+      const monthlyIntervals = eachMonthOfInterval({
+        start: contract.first_payment_date,
+        end: contract.end_date,
+      });
+      const nextPaymentDate = closestTo(today, monthlyIntervals);
+
+      if (isToday(nextPaymentDate)) collections.push(contract);
+    }
+  });
+
+  return res
+    .status(200)
+    .json({ collections, message: 'Success', status: 'success' });
+}
+
+module.exports = { handleSendPayment, handleGetTodayPendingCollections };

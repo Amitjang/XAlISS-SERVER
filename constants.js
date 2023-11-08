@@ -6,7 +6,8 @@ const pinRegex = /^[0-9]+$/;
 const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
 
 const phoneNumberValidator = ({ dialCode, phoneNumber }) => {
-  const phone = parsePhoneNumber(`${dialCode}${phoneNumber}`);
+  const dialCodeWithPlusSign = `+${dialCode.replace('+', '')}`;
+  const phone = parsePhoneNumber(`${dialCodeWithPlusSign}${phoneNumber}`);
   return phone.isValid();
 };
 
@@ -23,36 +24,39 @@ const CONTRACT_TYPES = [
 ];
 
 /**
- * Get the end date for the contract period
- * @param {string} contractType Type of Contract
- * @param {Date | null} firstPaymentDate Date for the first payment
+ * @param {string} contractType Contract Type
+ * @param {Date} firstPaymentDate First Payment Date
  */
-const getEndDateForContractType = (contractType, firstPaymentDate) => {
-  let today = new Date();
+const getEndDateForContractType = (
+  contractType,
+  firstPaymentDate = new Date()
+) => {
+  let date = firstPaymentDate;
 
   switch (contractType) {
     case 'daily-1-month':
-      today = addMonths(today, 1);
+    case 'weekly-1-month':
+      date = addMonths(date, 1);
       break;
     case 'daily-3-month':
     case 'weekly-3-month':
     case 'monthly-3-month':
-      today = addMonths(today, 3);
+      date = addMonths(date, 3);
       break;
     case 'monthly-6-Month':
-      today = addMonths(today, 6);
+      date = addMonths(date, 6);
       break;
     case 'weekly-1-year':
     case 'monthly-1-year':
-      today = addYears(today, 1);
+      date = addYears(date, 1);
       break;
     default:
       break;
   }
 
-  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
 
-  return today;
+  return date;
 };
 
 /**
