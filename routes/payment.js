@@ -3,6 +3,7 @@ const express = require('express');
 const {
   handleSendPayment,
   handleGetTodayPendingCollections,
+  handleSendPaymentToAgent,
 } = require('../controllers/payment');
 const {
   sendPaymentSchema,
@@ -18,5 +19,6 @@ router.get(
   validate(getTodayPendingCollectionsSchema),
   handleGetTodayPendingCollections
 );
+router.post('/agent', validate(sendPaymentSchema), handleSendPaymentToAgent);
 
 module.exports = router;
