@@ -72,6 +72,19 @@ model contracts {
   address            String?   @db.VarChar(255)
   lat                Float?    @db.Float
   lng                Float?    @db.Float
+  is_cancelled       Int?      @default(0) @db.TinyInt
   created_at         DateTime  @default(now()) @db.Timestamp(0)
   updated_at         DateTime  @default(now()) @db.Timestamp(0)
+}
+
+model transactions {
+  id            Int      @id @default(autoincrement())
+  contract_id   Int?
+  sender_id     Int
+  sender_type   Int      @default(2)
+  receiver_id   Int
+  receiver_type Int      @default(2)
+  amount        Float?   @db.Float
+  created_at    DateTime @default(now()) @db.Timestamp(0)
+  updated_at    DateTime @default(now()) @db.Timestamp(0)
 }

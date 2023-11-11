@@ -305,8 +305,39 @@ async function handleCreateContractUser(req, res) {
   }
 }
 
+/**
+ * Cancel the contract for the user
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleCancelContractUser(req, res) {
+  const { contractId } = req.body;
+
+  try {
+    await prisma.contracts.update({
+      where: { id: contractId },
+      data: { is_cancelled: 1 },
+    });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
+
+  return res
+    .status(200)
+    .json({ message: 'Cancelled the contract', status: 'error' });
+}
+
 module.exports = {
   handleCreateUser,
   handleGetUser,
   handleCreateContractUser,
+  handleCancelContractUser,
 };

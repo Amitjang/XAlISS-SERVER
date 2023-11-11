@@ -4,6 +4,7 @@ const {
   handleCreateUser,
   handleGetUser,
   handleCreateContractUser,
+  handleCancelContractUser,
 } = require('../controllers/user');
 
 const upload = require('../services/multer');
@@ -12,6 +13,7 @@ const {
   getUserSchema,
   createUserSchema,
   createContractUserSchema,
+  cancelContractUserSchema,
 } = require('../validators/user');
 const validate = require('../middleware/validate');
 
@@ -28,6 +30,11 @@ router.post(
   '/create-contract',
   validate(createContractUserSchema),
   handleCreateContractUser
+);
+router.delete(
+  '/delete-contract',
+  validate(cancelContractUserSchema),
+  handleCancelContractUser
 );
 
 module.exports = router;

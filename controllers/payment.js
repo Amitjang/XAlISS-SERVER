@@ -15,7 +15,7 @@ const prisma = require('../services/prisma');
 const server = require('../services/stellar');
 
 const CustomError = require('../utils/CustomError');
-const { xoftAsset } = require('../constants');
+const { xoftAsset, userTypes } = require('../constants');
 
 async function handleSendPayment(req, res) {
   const {
@@ -30,22 +30,43 @@ async function handleSendPayment(req, res) {
 
   console.log(purpose);
 
+  const senderAndReceiverType = {
+    sender: 'Agent',
+    receiver: 'User',
+  };
   let sender, receiver;
   try {
+    // check if sender is an agent
     sender = await prisma.agents.findFirst({
       where: {
         dial_code: senderDialCode.trim(),
         phone_number: senderPhoneNumber.trim(),
       },
     });
-    if (!sender)
+    if (!sender) {
+      // if sender is not an agent
+      // check if sender is a user
+      /*
+        const userSender = await prisma.users.findFirst({
+          where: {
+            dial_code: senderDialCode.trim(),
+            phone_number: senderPhoneNumber.trim(),
+          },
+        });
+      */
+
+      // if no sender is found in user
+      /* if (!userSender) */
       throw new CustomError({
         code: 404,
-        message: `No agent found with phone number: +${senderDialCode.replace(
+        message: `No user found with phone number: +${senderDialCode.replace(
           '+',
           ''
         )} ${senderPhoneNumber}`,
       });
+
+      /* sender = userSender; */
+    }
 
     if (sender.account_secret.trim().length === 0) {
       throw new CustomError({
@@ -54,20 +75,36 @@ async function handleSendPayment(req, res) {
       });
     }
 
+    // check if receiver is a user
     receiver = await prisma.users.findFirst({
       where: {
         dial_code: receiverDialCode.trim(),
         phone_number: receiverPhoneNumber.trim(),
       },
     });
-    if (!receiver)
-      throw new CustomError({
-        code: 404,
-        message: `No receiver found with phone number: +${receiverDialCode.replace(
-          '+',
-          ''
-        )} ${receiverPhoneNumber}`,
+    // if receiver is not user
+    if (!receiver) {
+      // check if receiver is agent
+      const agentReceiver = await prisma.agents.findFirst({
+        where: {
+          dial_code: receiverDialCode.trim(),
+          phone_number: receiverPhoneNumber.trim(),
+        },
       });
+      // if reciever is not an agent as well
+      // throw error
+      if (!agentReceiver) {
+        throw new CustomError({
+          code: 404,
+          message: `No receiver found with phone number: +${receiverDialCode.replace(
+            '+',
+            ''
+          )} ${receiverPhoneNumber}`,
+        });
+      }
+      receiver = agentReceiver;
+      senderAndReceiverType.receiver = 'Agent';
+    }
   } catch (error) {
     if (error instanceof CustomError) {
       return res
@@ -139,8 +176,19 @@ async function handleSendPayment(req, res) {
     transaction.sign(keyPair);
 
     // And finally, send it off to Stellar!
-    const result = await server.submitTransaction(transaction);
-    console.log('Success! Results:', result);
+    await server.submitTransaction(transaction);
+
+    // store the transaction details
+    await prisma.transactions.create({
+      data: {
+        amount: parseFloat(amount?.toFixed(7)),
+        sender_id: sender.id,
+        sender_type: userTypes[senderAndReceiverType.sender],
+        receiver_id: receiver.id,
+        receiver_type: userTypes[senderAndReceiverType.receiver],
+      },
+    });
+
     return res.status(201).json({ message: 'Success', status: 'success' });
   } catch (error) {
     console.error('Something went wrong!', error);
@@ -193,7 +241,7 @@ async function handleGetTodayPendingCollections(req, res) {
 
   try {
     contracts = await prisma.contracts.findMany({
-      where: { agent_id: agent.id, end_date: { gte: today } },
+      where: { agent_id: agent.id, end_date: { gte: today }, is_cancelled: 0 },
     });
   } catch (error) {
     return res.status(500).json({

@@ -189,4 +189,22 @@ const createContractUserSchema = z.object({
     ),
 });
 
-module.exports = { createUserSchema, getUserSchema, createContractUserSchema };
+const cancelContractUserSchema = z.object({
+  body: z.object({
+    contractId: z
+      .number({
+        coerce: true,
+        invalid_type_error: 'contractId must be a number',
+        required_error: 'contractId is required',
+      })
+      .int('contractId must be an integer')
+      .positive('contractId must be a positive integer'),
+  }),
+});
+
+module.exports = {
+  createUserSchema,
+  getUserSchema,
+  createContractUserSchema,
+  cancelContractUserSchema,
+};
