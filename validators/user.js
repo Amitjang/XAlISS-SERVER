@@ -1,6 +1,12 @@
 const z = require('zod');
 
-const { phoneNumberValidator, CONTRACT_TYPES } = require('../constants');
+const {
+  phoneNumberValidator,
+  CONTRACT_TYPES,
+  USER_TYPES,
+  pinRegex,
+  dobRegex,
+} = require('../constants');
 const { subDays } = require('date-fns');
 
 const createUserSchema = z.object({
@@ -10,10 +16,11 @@ const createUserSchema = z.object({
         .number({
           coerce: true,
           invalid_type_error: 'agentId must be a number',
-          required_error: 'agentId is required',
+          // required_error: 'agentId is required',
         })
         .int('agentId must be an integer')
-        .positive('agentId must be a positive integer'),
+        .positive('agentId must be a positive integer')
+        .optional(),
       name: z
         .string({
           invalid_type_error: 'name must be a string',
@@ -21,6 +28,10 @@ const createUserSchema = z.object({
         })
         .trim()
         .min(1, 'name cannot be empty'),
+      email: z
+        .string({ invalid_type_error: 'email must be a string' })
+        .email('email must be a valid email address')
+        .optional(),
       dialCode: z
         .string({
           invalid_type_error: 'dialCode must be a string',
@@ -86,8 +97,85 @@ const createUserSchema = z.object({
         invalid_type_error: 'lng must be a float',
         required_error: 'lng is required',
       }),
+      pin: z
+        .string({
+          invalid_type_error: 'pin must be a string',
+          required_error: 'pin is required',
+        })
+        .trim()
+        .min(1, 'pin cannot be empty')
+        .regex(pinRegex, 'pin must only contain numbers')
+        .min(4, 'pin must be 4 characters long')
+        .max(4, 'pin must be 4 characters long')
+        .optional(),
+      transactionPin: z
+        .string({
+          invalid_type_error: 'transactionPin must be a string',
+          required_error: 'transactionPin is required',
+        })
+        .trim()
+        .min(1, 'transactionPin cannot be empty')
+        .regex(pinRegex, 'transactionPin must only contain numbers')
+        .min(4, 'transactionPin must be 4 characters long')
+        .max(4, 'transactionPin must be 4 characters long')
+        .optional(),
+      gender: z
+        .enum(['Male', 'Female', 'Other'], {
+          invalid_type_error: 'gender must be a string',
+          required_error: 'gender is required',
+        })
+        .optional(),
+      occupation: z
+        .string({
+          invalid_type_error: 'occupation must be a string',
+          required_error: 'occupation is required',
+        })
+        .min(1, 'occupation cannot be empty')
+        .optional(),
+      relativeDialCode: z
+        .string({
+          invalid_type_error: 'relativeDialCode must be a string',
+          required_error: 'relativeDialCode is required',
+        })
+        .trim()
+        .min(1, 'relativeDialCode cannot be empty')
+        .optional(),
+      relativePhoneNumber: z
+        .string({
+          invalid_type_error: 'relativePhoneNumber must be a string',
+          required_error: 'relativePhoneNumber is required',
+        })
+        .trim()
+        .min(1, 'relativePhoneNumber cannot be empty')
+        .optional(),
+      dateOfBirth: z
+        .string({
+          invalid_type_error: 'dateOfBirth must be a string',
+          required_error: 'dateOfBirth is required',
+        })
+        .trim()
+        .min(1, 'dateOfBirth cannot be empty')
+        .regex(dobRegex, 'dateOfBirth must be of format DD/MM/YYYY')
+        .optional(),
+      type: z
+        .enum(USER_TYPES, {
+          invalid_type_error: `type can either be ${USER_TYPES.join(' | ')}`,
+          required_error: 'type is required',
+        })
+        .optional(),
     })
-    .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
+    .refine(phoneNumberValidator, {
+      message: 'dialCode/phoneNumber is invalid',
+    })
+    .refine(
+      val =>
+        // if (val.relativeDialCode && val.phoneNumber)
+        phoneNumberValidator({
+          dialCode: val.relativeDialCode,
+          phoneNumber: val.relativePhoneNumber,
+        }),
+      { message: 'relativeDialCode/relativePhoneNumber is invalid' }
+    ),
 });
 
 const getUserSchema = z.object({

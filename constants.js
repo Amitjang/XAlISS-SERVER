@@ -11,6 +11,13 @@ const phoneNumberValidator = ({ dialCode, phoneNumber }) => {
   return phone.isValid();
 };
 
+const userTypes = {
+  Admin: 0,
+  Agent: 1,
+  User: 2,
+};
+const USER_TYPES = Object.keys(userTypes);
+
 const CONTRACT_TYPES = [
   'daily-1-month',
   'daily-3-month',
@@ -85,6 +92,8 @@ module.exports = {
   pinRegex,
   dobRegex,
   phoneNumberValidator,
+  USER_TYPES,
+  userTypes,
   CONTRACT_TYPES,
   getEndDateForContractType,
   getSavingAndWithdrawTypeForContractType,
