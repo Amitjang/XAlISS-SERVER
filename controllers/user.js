@@ -332,7 +332,7 @@ async function handleCancelContractUser(req, res) {
 
   return res
     .status(200)
-    .json({ message: 'Cancelled the contract', status: 'error' });
+    .json({ message: 'Cancelled the contract', status: 'success' });
 }
 
 module.exports = {
