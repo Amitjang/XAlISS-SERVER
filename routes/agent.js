@@ -7,6 +7,8 @@ const {
   handleGetAgentSecretKey,
   handleForgotPinAgent,
   handleSetNewPinAgent,
+  handleGetUsersByAgentId,
+  handleGetAgentTransactions,
 } = require('../controllers/agent');
 
 const upload = require('../services/multer');
@@ -18,12 +20,24 @@ const {
   getAgentSecretKeySchema,
   forgotPinAgentSchema,
   setNewPinAgentSchema,
+  getUsersByAgentIdSchema,
+  getAgentTransactionsSchema,
 } = require('../validators/agent');
 const validate = require('../middleware/validate');
 
 const router = express.Router();
 
 router.get('/:agentId', validate(getAccountSchema), handleGetAccount);
+router.get(
+  '/:agentId/users',
+  validate(getUsersByAgentIdSchema),
+  handleGetUsersByAgentId
+);
+router.get(
+  '/:agentId/transactions',
+  validate(getAgentTransactionsSchema),
+  handleGetAgentTransactions
+);
 router.post(
   '/',
   upload.single('verification-proof'), // single verification proof image

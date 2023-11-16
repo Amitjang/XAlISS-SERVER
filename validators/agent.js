@@ -276,6 +276,32 @@ const getAgentSecretKeySchema = z.object({
     .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
 });
 
+const getUsersByAgentIdSchema = z.object({
+  params: z.object({
+    agentId: z
+      .number({
+        coerce: true,
+        invalid_type_error: 'agentId must be a number',
+        required_error: 'agentId is required',
+      })
+      .int('agentId must be an integer')
+      .positive('agentId must be a positive integer'),
+  }),
+});
+
+const getAgentTransactionsSchema = z.object({
+  params: z.object({
+    agentId: z
+      .number({
+        coerce: true,
+        invalid_type_error: 'agentId must be a number',
+        required_error: 'agentId is required',
+      })
+      .int('agentId must be an integer')
+      .positive('agentId must be a positive integer'),
+  }),
+});
+
 module.exports = {
   createAccountSchema: createAgentSchema,
   getAccountSchema: getAgentSchema,
@@ -283,4 +309,6 @@ module.exports = {
   forgotPinAgentSchema,
   setNewPinAgentSchema,
   getAgentSecretKeySchema,
+  getUsersByAgentIdSchema,
+  getAgentTransactionsSchema,
 };

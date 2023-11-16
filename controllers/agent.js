@@ -9,6 +9,7 @@ const CustomError = require('../utils/CustomError');
 
 const Agent = require('../models/Agent');
 const { xoftAsset } = require('../constants');
+const User = require('../models/User');
 
 async function handleCreateAgent(req, res) {
   const file = req.file;
@@ -328,6 +329,134 @@ async function handleGetAgentSecretKey(req, res) {
   }
 }
 
+/**
+ * Get Users created by the Agent
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetUsersByAgentId(req, res) {
+  const { agentId } = req.params;
+
+  let users;
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { id: parseInt(agentId, 10) },
+    });
+    if (!agent) throw new CustomError({ code: 404, message: 'No agent found' });
+
+    users = await prisma.users.findMany({ where: { agent_id: agent.id } });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
+
+  return res.status(200).json({
+    users: users,
+    message: 'Successfully fetched users',
+    status: 'success',
+  });
+}
+
+/**
+ * Get Agent Transactions
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetAgentTransactions(req, res) {
+  const { agentId } = req.params;
+
+  try {
+    const agent = await prisma.agents.findFirst({
+      where: { id: parseInt(agentId, 10) },
+    });
+    if (!agent) throw new CustomError({ code: 404, message: 'No agent found' });
+
+    const transactions = await prisma.transactions.findMany({
+      where: {
+        OR: [
+          { receiver_id: agent.id, receiver_type: 1 },
+          { sender_id: agent.id, sender_type: 1 },
+        ],
+      },
+    });
+
+    const usersIds = [];
+    const agentsIds = [];
+    transactions.forEach(txn => {
+      // receiver can either be agent or user
+      if (txn.receiver_type === 1) agentsIds.push(txn.receiver_id);
+      else if (txn.receiver_type === 2) usersIds.push(txn.receiver_id);
+
+      // sender can either be agent or user
+      if (txn.sender_type === 1) agentsIds.push(txn.receiver_id);
+      else if (txn.sender_type === 2) usersIds.push(txn.receiver_id);
+    });
+
+    // get all the agent and user from the sender and receiver in transactions
+    const agents = await prisma.agents.findMany({
+      where: { id: { in: agentsIds } },
+    });
+    const users = await prisma.users.findMany({
+      where: { id: { in: usersIds } },
+    });
+
+    // store agent and user in maps for faster accessibility
+    const agentsMap = {};
+    agents.forEach(a => {
+      agentsMap[a.id] = new Agent(a);
+    });
+    const usersMap = {};
+    users.forEach(u => {
+      usersMap[u.id] = new User(u);
+    });
+
+    // finalize response
+    const txnsRes = [];
+    transactions.forEach(txn => {
+      const txnRes = {
+        id: txn.id,
+        contract_id: txn.contract_id,
+        amount: txn.amount,
+        created_at: txn.created_at,
+      };
+      // sender can be agent or user
+      if (txn.sender_type === 1)
+        txnRes.sender = agentsMap[txn.sender_id]?.toJson() ?? {};
+      else if (txn.sender_type === 2)
+        txnRes.sender = usersMap[txn.sender_id]?.toJson() ?? {};
+
+      // receiver can be agent or user
+      if (txn.receiver_type === 1)
+        txnRes.receiver = agentsMap[txn.receiver_id]?.toJson() ?? {};
+      else if (txn.receiver_type === 2)
+        txnRes.receiver = usersMap[txn.receiver_id]?.toJson() ?? {};
+
+      txnsRes.push(txnRes);
+    });
+
+    return res
+      .status(200)
+      .json({ users: usersMap, agents: agentsMap, txns: txnsRes });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res
+        .status(error.code)
+        .json({ message: error.message, status: 'error' });
+    else
+      return res.status(500).json({
+        message: error?.message ?? 'Something went wrong!',
+        status: 'error',
+      });
+  }
+}
+
 module.exports = {
   handleCreateAccount: handleCreateAgent,
   handleGetAccount: handleGetAgent,
@@ -335,4 +464,6 @@ module.exports = {
   handleForgotPinAgent,
   handleSetNewPinAgent,
   handleGetAgentSecretKey,
+  handleGetUsersByAgentId,
+  handleGetAgentTransactions,
 };
