@@ -192,7 +192,11 @@ async function handleSendPayment(req, res) {
     return res.status(201).json({ message: 'Success', status: 'success' });
   } catch (error) {
     console.error('Something went wrong!', error);
-    return res.status(500).json({ message: error, status: 'error' });
+    return res.status(500).json({
+      message: error.message,
+      status: 'error',
+      extras: error?.response?.data?.extras,
+    });
     // If the result is unknown (no response body, timeout etc.) we simply resubmit
     // already built transaction:
     // server.submitTransaction(transaction);
