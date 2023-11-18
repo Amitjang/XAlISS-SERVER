@@ -9,6 +9,7 @@ const {
   closestTo,
   getDay,
   isFuture,
+  set,
 } = require('date-fns');
 
 const prisma = require('../services/prisma');
@@ -254,42 +255,64 @@ async function handleGetTodayPendingCollections(req, res) {
     });
   }
 
-  contracts.forEach(contract => {
+  for (const contract of contracts) {
     if (!isFuture(contract.end_date)) return;
 
+    let intervals;
     if (contract.saving_type === 'daily') {
-      const dailyIntervals = eachDayOfInterval({
+      intervals = eachDayOfInterval({
         start: contract.first_payment_date,
         end: contract.end_date,
       });
-      const nextPaymentDate = closestTo(today, dailyIntervals);
-
-      if (isToday(nextPaymentDate)) collections.push(contract);
     } else if (contract.saving_type === 'weekly') {
-      const weekIntervals = eachWeekOfInterval(
+      intervals = eachWeekOfInterval(
         {
           start: contract.first_payment_date,
           end: contract.end_date,
         },
         { weekStartsOn: getDay(contract.first_payment_date) }
       );
-      const nextPaymentDate = closestTo(today, weekIntervals);
-
-      if (isToday(nextPaymentDate)) contracts.push(contract);
     } else if (contract.saving_type === 'monthly') {
-      const monthlyIntervals = eachMonthOfInterval({
+      intervals = eachMonthOfInterval({
         start: contract.first_payment_date,
         end: contract.end_date,
       });
-      const nextPaymentDate = closestTo(today, monthlyIntervals);
-
-      if (isToday(nextPaymentDate)) collections.push(contract);
     }
-  });
+
+    const nextPaymentDate = closestTo(today, intervals);
+    if (!isToday(nextPaymentDate)) continue;
+
+    const isNextPaymentDateDone = await isPaymentDone(
+      contract.id,
+      nextPaymentDate
+    );
+
+    console.log(isNextPaymentDateDone);
+    if (!isNextPaymentDateDone.isDone) collections.push(contract);
+  }
 
   return res
     .status(200)
     .json({ collections, message: 'Success', status: 'success' });
+}
+
+/**
+ * Check if payment is not done for the contractId on the date specified
+ * @param {Number} contract_id Contract ID
+ * @param {Date} date Date
+ */
+async function isPaymentDone(contract_id, date) {
+  // set the date to midnight
+  const dateBeforeMidnight = set(date, { hours: 23, minutes: 59, seconds: 59 });
+
+  const txn = await prisma.transactions.findFirst({
+    where: {
+      contract_id: contract_id,
+      created_at: { gte: date, lte: dateBeforeMidnight },
+    },
+  });
+
+  return { isDone: !!txn, txn: txn };
 }
 
 /**
