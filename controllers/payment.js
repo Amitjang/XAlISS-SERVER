@@ -1,22 +1,14 @@
 const StellarSdk = require('stellar-sdk');
 const bcrypt = require('bcryptjs');
 const { request, response } = require('express');
-const {
-  isToday,
-  eachDayOfInterval,
-  eachWeekOfInterval,
-  eachMonthOfInterval,
-  closestTo,
-  getDay,
-  isFuture,
-  set,
-} = require('date-fns');
+const { isToday, closestTo, isFuture, set } = require('date-fns');
 
 const prisma = require('../services/prisma');
 const server = require('../services/stellar');
 
 const CustomError = require('../utils/CustomError');
 const { xoftAsset, userTypes } = require('../constants');
+const getContractIntervals = require('../utils/getContractIntervals');
 
 async function handleSendPayment(req, res) {
   const {
@@ -27,6 +19,7 @@ async function handleSendPayment(req, res) {
     receiverPhoneNumber,
     amount,
     purpose,
+    contractId,
   } = req.body;
 
   console.log(purpose);
@@ -117,6 +110,70 @@ async function handleSendPayment(req, res) {
         .json({ message: 'Error finding sender: ' + error, status: 'error' });
     }
   }
+  const txn = {
+    contract_id: null,
+    amount: parseFloat(amount?.toFixed(7)),
+    sender_id: sender.id,
+    sender_type: userTypes[senderAndReceiverType.sender],
+    receiver_id: receiver.id,
+    receiver_type: userTypes[senderAndReceiverType.receiver],
+  };
+  /*
+   / if the receiver is a user && contract id is present
+   / get the contract, calculate the intervals, get closest date
+   / if today is day for collection, save the contract_id in txn
+   / else normal txn
+   */
+  if (senderAndReceiverType.receiver === 'User' && contractId !== undefined) {
+    try {
+      const contract = await prisma.contracts.findFirst({
+        where: { id: parseInt(contractId, 10) },
+      });
+      if (!contract)
+        throw new CustomError({
+          code: 404,
+          message: `No contract found for contract id ${contractId}`,
+        });
+
+      if (contract.user_id !== receiver.id) {
+        throw new CustomError({
+          code: 409,
+          message: 'Invalid contractId, does not belong the same user',
+        });
+      }
+
+      const intervals = getContractIntervals(
+        contract.saving_type,
+        contract.first_payment_date,
+        contract.end_date
+      );
+
+      const today = new Date();
+      today.setHours(0, 0, 0);
+
+      const nextPaymentDate = closestTo(today, intervals);
+
+      if (isToday(nextPaymentDate)) {
+        const { isDone } = await isPaymentDone(contract.id, nextPaymentDate);
+        if (isDone)
+          throw new CustomError({
+            code: 400,
+            message: `Already paid for ${nextPaymentDate.toLocaleDateString()} collection`,
+          });
+        else txn.contract_id = contract.id;
+      }
+    } catch (error) {
+      if (error instanceof CustomError)
+        return res
+          .status(error.code)
+          .json({ message: error.message, status: 'error' });
+      else
+        return res.status(500).json({
+          message: error?.message ?? 'Something went wrong!',
+          status: 'error',
+        });
+    }
+  }
 
   let senderAcc;
   try {
@@ -181,13 +238,7 @@ async function handleSendPayment(req, res) {
 
     // store the transaction details
     await prisma.transactions.create({
-      data: {
-        amount: parseFloat(amount?.toFixed(7)),
-        sender_id: sender.id,
-        sender_type: userTypes[senderAndReceiverType.sender],
-        receiver_id: receiver.id,
-        receiver_type: userTypes[senderAndReceiverType.receiver],
-      },
+      data: txn,
     });
 
     return res.status(201).json({ message: 'Success', status: 'success' });
@@ -258,26 +309,11 @@ async function handleGetTodayPendingCollections(req, res) {
   for (const contract of contracts) {
     if (!isFuture(contract.end_date)) return;
 
-    let intervals;
-    if (contract.saving_type === 'daily') {
-      intervals = eachDayOfInterval({
-        start: contract.first_payment_date,
-        end: contract.end_date,
-      });
-    } else if (contract.saving_type === 'weekly') {
-      intervals = eachWeekOfInterval(
-        {
-          start: contract.first_payment_date,
-          end: contract.end_date,
-        },
-        { weekStartsOn: getDay(contract.first_payment_date) }
-      );
-    } else if (contract.saving_type === 'monthly') {
-      intervals = eachMonthOfInterval({
-        start: contract.first_payment_date,
-        end: contract.end_date,
-      });
-    }
+    const intervals = getContractIntervals(
+      contract.saving_type,
+      contract.first_payment_date,
+      contract.end_date
+    );
 
     const nextPaymentDate = closestTo(today, intervals);
     if (!isToday(nextPaymentDate)) continue;

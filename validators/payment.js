@@ -63,6 +63,15 @@ const sendPaymentSchema = z.object({
           required_error: 'purpose is required',
         }
       ),
+      contractId: z
+        .number({
+          coerce: true,
+          invalid_type_error: 'contractId must be a number',
+          required_error: 'contractId is required',
+        })
+        .int('contractId must be an integer')
+        .positive('contractId must be a positive integer')
+        .optional(),
     })
     .refine(
       val =>
