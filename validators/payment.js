@@ -71,7 +71,7 @@ const sendPaymentSchema = z.object({
         })
         .int('contractId must be an integer')
         .positive('contractId must be a positive integer')
-        .optional(),
+        .nullish(),
     })
     .refine(
       val =>

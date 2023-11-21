@@ -124,7 +124,11 @@ async function handleSendPayment(req, res) {
    / if today is day for collection, save the contract_id in txn
    / else normal txn
    */
-  if (senderAndReceiverType.receiver === 'User' && contractId !== undefined) {
+  if (
+    senderAndReceiverType.receiver === 'User' &&
+    contractId !== undefined &&
+    contractId !== null
+  ) {
     try {
       const contract = await prisma.contracts.findFirst({
         where: { id: parseInt(contractId, 10) },
