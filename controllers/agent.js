@@ -443,7 +443,11 @@ async function handleGetAgentTransactions(req, res) {
 
     return res
       .status(200)
-      .json({ users: usersMap, agents: agentsMap, txns: txnsRes });
+      .json({
+        transactions: txnsRes,
+        message: 'Successfully fetched transactions',
+        status: 'success',
+      });
   } catch (error) {
     if (error instanceof CustomError)
       return res
