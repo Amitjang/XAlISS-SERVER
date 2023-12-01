@@ -1,10 +1,10 @@
-const { initializeApp, credential } = require('firebase-admin');
+const firebase = require('firebase-admin');
 const { getMessaging } = require('firebase-admin/messaging');
 
 const firebaseSACert = require('../xaliss-agent-app-firebase-adminsdk-71a45-3b3ccdd427.json');
 
 const initializeFirebaseApp = () => {
-  initializeApp({
+  firebase.initializeApp({
     apiKey: 'AIzaSyDo5um3bhT5pl4ccbJ85yW85ul0uEA9Alo',
     authDomain: 'xaliss-agent-app.firebaseapp.com',
     projectId: 'xaliss-agent-app',
@@ -12,7 +12,7 @@ const initializeFirebaseApp = () => {
     messagingSenderId: '440555157997',
     appId: '1:440555157997:web:b3c1888300f79302350fe4',
     measurementId: 'G-B0MQF7ZBKX',
-    credential: credential.cert(firebaseSACert),
+    credential: firebase.credential.cert(firebaseSACert),
   });
 };
 
