@@ -66,6 +66,16 @@ class Agent {
     };
   }
 
+  /**
+   * @param {AccountResponse} accountDetails Bonus accountDetails
+   */
+  addBonusAccountDetails({ balances, account_id, ...rest }) {
+    this.bonus_account = {
+      account_id: account_id,
+      balances: balances,
+    };
+  }
+
   toJson() {
     return {
       id: this.id,
@@ -86,6 +96,7 @@ class Agent {
       relative_phone_number: this.relative_phone_number,
       date_of_birth: this.date_of_birth,
       account: this.account,
+      bonus_account: this.bonus_account,
       created_at: this.created_at,
       updated_at: this.updated_at,
     };

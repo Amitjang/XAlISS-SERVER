@@ -8,6 +8,8 @@ const agentRouter = require('./routes/agent');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
 const healthRouter = require('./routes/health');
+const startSchedulers = require('./cronjob');
+const { initializeFirebaseApp } = require('./services/firebase');
 
 dotenv.config();
 const app = express();
@@ -33,6 +35,10 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/health', healthRouter);
 
 app.use('/images', express.static(path.join(__dirname, 'uploads')));
+
+// Start the sendBonus scheduler
+initializeFirebaseApp();
+startSchedulers();
 
 app.listen(PORT, () => {
   console.log(`🚀 Server ready at: http://localhost:${PORT}`);

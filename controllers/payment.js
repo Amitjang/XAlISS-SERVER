@@ -311,7 +311,7 @@ async function handleGetTodayPendingCollections(req, res) {
   }
 
   for (const contract of contracts) {
-    if (!isFuture(contract.end_date)) return;
+    if (!isFuture(contract.end_date)) continue;
 
     const intervals = getContractIntervals(
       contract.saving_type,

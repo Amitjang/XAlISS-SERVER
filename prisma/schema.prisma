@@ -24,6 +24,8 @@ model users {
   account_secret               String?  @db.VarChar(255)
   verification_number          String?  @db.VarChar(255)
   verification_proof_image_url String?  @db.VarChar(255)
+  device_token                 String   @default("") @db.VarChar(400)
+  device_type                  String   @default("") @db.VarChar(255)
   created_at                   DateTime @default(now()) @db.Timestamp(0)
   updated_at                   DateTime @default(now()) @db.Timestamp(0)
 }
@@ -32,6 +34,8 @@ model agents {
   id                           Int      @id @default(autoincrement())
   account_id                   String   @default("") @db.VarChar(100)
   account_secret               String   @default("") @db.VarChar(100)
+  bonus_wallet_public_key      String   @default("") @db.VarChar(100)
+  bonus_wallet_secret_key      String   @default("") @db.VarChar(100)
   dial_code                    String   @default("") @db.VarChar(15)
   phone_number                 String   @default("") @db.VarChar(50)
   name                         String   @default("") @db.VarChar(100)
@@ -52,6 +56,8 @@ model agents {
   date_of_birth                String   @default("") @db.VarChar(10)
   transaction_pin              String   @default("") @db.VarChar(255)
   verification_proof_image_url String?  @db.VarChar(255)
+  device_token                 String   @default("") @db.VarChar(400)
+  device_type                  String   @default("") @db.VarChar(255)
   created_at                   DateTime @default(now()) @db.Timestamp(0)
   updated_at                   DateTime @default(now()) @db.Timestamp(0)
 }
@@ -87,4 +93,38 @@ model transactions {
   amount        Float?   @db.Float
   created_at    DateTime @default(now()) @db.Timestamp(0)
   updated_at    DateTime @default(now()) @db.Timestamp(0)
+}
+
+model fees_history {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  contract_id     Int?
+  user_id         Int?
+  total_amount    Float?    @db.Float
+  fees_percentage Float?    @db.Float
+  fees_amount     Float?    @db.Float
+  date            DateTime? @db.Timestamp(0)
+  saving_type     String?   @db.VarChar(255)
+  payment_status  Int?      @db.TinyInt
+  error           String?   @db.VarChar(500)
+  created_at      DateTime  @default(now()) @db.Timestamp(0)
+  updated_at      DateTime  @default(now()) @db.Timestamp(0)
+
+  @@unique([contract_id, user_id, date], map: "contract_id_user_id_date")
+}
+
+model bonus_history {
+  id               Int       @id @default(autoincrement())
+  contract_id      Int?
+  agent_id         Int?
+  total_amount     Float?    @db.Float
+  bonus_percentage Float?    @db.Float
+  bonus_amount     Float?    @db.Float
+  date             DateTime? @db.Timestamp(0)
+  saving_type      String?   @db.VarChar(50)
+  payment_status   Int       @default(0) @db.TinyInt
+  error            String    @default("") @db.VarChar(500)
+  created_at       DateTime  @default(now()) @db.Timestamp(0)
+  updated_at       DateTime  @default(now()) @db.Timestamp(0)
+
+  @@unique([contract_id, agent_id, date], map: "contract_id_agent_id_date")
 }

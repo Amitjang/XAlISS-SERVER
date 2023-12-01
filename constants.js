@@ -87,6 +87,15 @@ const getSavingAndWithdrawTypeForContractType = contractType => {
 
 const xoftAsset = new StellarSdk.Asset('XOFT', process.env.ISSUER_TOKEN); // Create a trustline to the XOFT token
 
+const savingFees = {
+  daily: 3.5,
+  weekly: 3.0,
+  monthly: 3.0,
+};
+
+const COMPANY_WALLET_PUBLIC_KEY = process.env.COMPANY_WALLET_PUBLIC_KEY;
+const COMPANY_WALLET_SECRET_KEY = process.env.COMPANY_WALLET_SECRET_KEY;
+
 module.exports = {
   pinRegex,
   dobRegex,
@@ -96,4 +105,7 @@ module.exports = {
   getEndDateForContractType,
   getSavingAndWithdrawTypeForContractType,
   xoftAsset,
+  savingFees,
+  COMPANY_WALLET_PUBLIC_KEY,
+  COMPANY_WALLET_SECRET_KEY,
 };

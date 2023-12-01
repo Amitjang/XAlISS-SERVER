@@ -132,6 +132,14 @@ const createAgentSchema = z.object({
         .regex(pinRegex, 'transactionPin must only contain numbers')
         .min(4, 'transactionPin must be 4 characters long')
         .max(4, 'transactionPin must be 4 characters long'),
+      deviceToken: z
+        .string({ invalid_type_error: 'deviceToken must be a string' })
+        .min(1, 'deviceToken cannot be empty')
+        .nullish(),
+      deviceType: z
+        .string({ invalid_type_error: 'deviceType must be a string' })
+        .min(1, 'deviceType cannot be empty')
+        .nullish(),
     })
     .refine(
       val =>
@@ -189,6 +197,14 @@ const loginAgentSchema = z.object({
         .regex(pinRegex, 'pin must only contain numbers')
         .min(4, 'pin must be 4 characters long')
         .max(4, 'pin must be 4 characters long'),
+      deviceToken: z
+        .string({ invalid_type_error: 'deviceToken must be a string' })
+        .min(1, 'deviceToken cannot be empty')
+        .nullish(),
+      deviceType: z
+        .string({ invalid_type_error: 'deviceType must be a string' })
+        .min(1, 'deviceType cannot be empty')
+        .nullish(),
     })
     .refine(phoneNumberValidator, { message: 'phoneNumber is invalid' }),
 });
