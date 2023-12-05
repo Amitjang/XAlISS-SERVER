@@ -64,23 +64,24 @@ model agents {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model contracts {
-  id                 Int       @id @default(autoincrement())
-  agent_id           Int?
-  user_id            Int?
-  user_dial_code     String?   @db.VarChar(20)
-  user_phone_number  String?   @db.VarChar(50)
-  saving_type        String    @default("daily-1-month") @db.VarChar(255)
-  withdraw_time      String    @default("daily-1-month") @db.VarChar(255)
-  amount             Float?
-  first_payment_date DateTime? @db.Timestamp(0)
-  comment            String?   @db.VarChar(255)
-  end_date           DateTime? @db.Timestamp(0)
-  address            String?   @db.VarChar(255)
-  lat                Float?    @db.Float
-  lng                Float?    @db.Float
-  is_cancelled       Int?      @default(0) @db.TinyInt
-  created_at         DateTime  @default(now()) @db.Timestamp(0)
-  updated_at         DateTime  @default(now()) @db.Timestamp(0)
+  id                  Int       @id @default(autoincrement())
+  agent_id            Int?
+  user_id             Int?
+  user_dial_code      String?   @db.VarChar(20)
+  user_phone_number   String?   @db.VarChar(50)
+  user_sign_image_url String?   @db.VarChar(255)
+  saving_type         String    @default("daily-1-month") @db.VarChar(255)
+  withdraw_time       String    @default("daily-1-month") @db.VarChar(255)
+  amount              Float?
+  first_payment_date  DateTime? @db.Timestamp(0)
+  comment             String?   @db.VarChar(255)
+  end_date            DateTime? @db.Timestamp(0)
+  address             String?   @db.VarChar(255)
+  lat                 Float?    @db.Float
+  lng                 Float?    @db.Float
+  is_cancelled        Int?      @default(0) @db.TinyInt
+  created_at          DateTime  @default(now()) @db.Timestamp(0)
+  updated_at          DateTime  @default(now()) @db.Timestamp(0)
 }
 
 model transactions {

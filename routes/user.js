@@ -7,7 +7,7 @@ const {
   handleCancelContractUser,
 } = require('../controllers/user');
 
-const upload = require('../services/multer');
+const { upload } = require('../services/multer');
 
 const {
   getUserSchema,
@@ -22,12 +22,13 @@ const router = express.Router();
 router.get('/:userId', validate(getUserSchema), handleGetUser);
 router.post(
   '/',
-  upload.single('verification-proof'),
+  upload('../uploads/users/verification-proof/').single('verification-proof'),
   validate(createUserSchema),
   handleCreateUser
 );
 router.post(
   '/create-contract',
+  upload('../uploads/users/signature/').single('userSignature'),
   validate(createContractUserSchema),
   handleCreateContractUser
 );

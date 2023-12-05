@@ -11,7 +11,7 @@ const {
   handleGetAgentTransactions,
 } = require('../controllers/agent');
 
-const upload = require('../services/multer');
+const { upload } = require('../services/multer');
 
 const {
   createAccountSchema,
@@ -40,7 +40,7 @@ router.get(
 );
 router.post(
   '/',
-  upload.single('verification-proof'), // single verification proof image
+  upload('../uploads/agents/verification-proof/').single('verification-proof'), // single verification proof image
   validate(createAccountSchema),
   handleCreateAccount
 );

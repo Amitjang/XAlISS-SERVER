@@ -295,7 +295,18 @@ const sendBonusToAgent = async (agentId, bonus) => {
   }
 
   try {
-    await sendNotification({}, agent.device_type, agent.device_token, null);
+    const notifData = {
+      title: `Monthly bonus received`,
+      body: `${bonus} monthly bonus received for this month.`,
+    };
+    await sendNotification(
+      notifData,
+      agent.device_type,
+      agent.device_token,
+      null,
+      notifData.title,
+      notifData.body
+    );
   } catch (error) {
     state.error = `Error sending monthly bonus notification to agent [${
       agent.id

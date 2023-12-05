@@ -198,7 +198,12 @@ async function handleGetUser(req, res) {
  * @param {response} res response
  */
 async function handleCreateContractUser(req, res) {
-  // TODO: add agent_id
+  const userSignatureImage = req.file;
+  if (!userSignatureImage)
+    return res
+      .status(400)
+      .json({ message: 'User Signature is required', status: 'error' });
+
   const {
     dialCode,
     phoneNumber,
@@ -276,6 +281,7 @@ async function handleCreateContractUser(req, res) {
 
         user_dial_code: user.dial_code,
         user_phone_number: user.phone_number,
+        user_sign_image_url: userSignatureImage.filename,
 
         saving_type: saving_type,
         withdraw_time: withdraw_time,
