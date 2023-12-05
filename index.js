@@ -4,6 +4,7 @@ const express = require('express');
 const morgan = require('morgan');
 
 const authRouter = require('./routes/auth');
+const adminRouter = require('./routes/admin');
 const agentRouter = require('./routes/agent');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
@@ -29,6 +30,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/agents', agentRouter);
 app.use('/api/users', userRouter);
 app.use('/api/payment', paymentRouter);
