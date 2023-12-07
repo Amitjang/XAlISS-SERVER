@@ -558,6 +558,37 @@ async function handleGetAgentTransactions(req, res) {
   }
 }
 
+/**
+ * Get Agents' notifications
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetAgentNotifications(req, res) {
+  const { agentId } = req.params;
+
+  // get all the agents' notfications
+  let notifications;
+  try {
+    notifications = await prisma.notifications.findMany({
+      where: {
+        type: 'agent',
+        ref_id: parseInt(agentId, 10),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error?.message ?? 'Something went wrong!',
+      status: 'error',
+    });
+  }
+
+  return res.status(200).json({
+    notifications: notifications,
+    message: 'Successfully fetched notifications',
+    status: 'success',
+  });
+}
+
 module.exports = {
   handleCreateAccount: handleCreateAgent,
   handleGetAccount: handleGetAgent,
@@ -567,4 +598,5 @@ module.exports = {
   handleGetAgentSecretKey,
   handleGetUsersByAgentId,
   handleGetAgentTransactions,
+  handleGetAgentNotifications,
 };

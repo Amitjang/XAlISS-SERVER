@@ -9,6 +9,7 @@ const agentRouter = require('./routes/agent');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
 const healthRouter = require('./routes/health');
+const notificationRouter = require('./routes/notification');
 const startSchedulers = require('./cronjob');
 const { initializeFirebaseApp } = require('./services/firebase');
 
@@ -34,6 +35,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/agents', agentRouter);
 app.use('/api/users', userRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/notifications', notificationRouter);
 app.use('/api/health', healthRouter);
 
 app.use('/images', express.static(path.join(__dirname, 'uploads')));

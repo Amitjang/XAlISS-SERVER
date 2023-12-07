@@ -9,6 +9,7 @@ const {
   handleSetNewPinAgent,
   handleGetUsersByAgentId,
   handleGetAgentTransactions,
+  handleGetAgentNotifications,
 } = require('../controllers/agent');
 
 const { upload } = require('../services/multer');
@@ -60,5 +61,6 @@ router.post(
   validate(getAgentSecretKeySchema),
   handleGetAgentSecretKey
 );
+router.get('/notifications/:agentId', handleGetAgentNotifications);
 
 module.exports = router;
