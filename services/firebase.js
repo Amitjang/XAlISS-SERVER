@@ -3,6 +3,9 @@ const { getMessaging } = require('firebase-admin/messaging');
 
 const firebaseSACert = require('../xaliss-agent-app-firebase-adminsdk-71a45-3b3ccdd427.json');
 
+const notifImageURL =
+  'https://firebasestorage.googleapis.com/v0/b/xaliss-agent-app.appspot.com/o/ic_launcher_android.png?alt=media&token=f9402d34-dcfd-40e9-9b90-a43d59e979b2';
+
 const initializeFirebaseApp = () => {
   firebase.initializeApp({
     apiKey: 'AIzaSyDo5um3bhT5pl4ccbJ85yW85ul0uEA9Alo',
@@ -38,7 +41,7 @@ const sendNotification = (
     notification: {
       title: title,
       body: body,
-      // imageUrl: 'URL',
+      imageUrl: notifImageURL,
     },
   };
 
@@ -63,7 +66,7 @@ const sendNotification = (
         // defaultVibrateTimings: false,
         // eventTimestamp: new Date(),
         // icon: '',
-        // imageUrl: 'URL',
+        imageUrl: notifImageURL,
         // lightSettings: {
         //   color: '#rrggbb',
         //   lightOffDurationMillis: 500,
