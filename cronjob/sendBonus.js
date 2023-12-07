@@ -20,6 +20,7 @@ const {
   xoftAsset,
   COMPANY_WALLET_SECRET_KEY,
 } = require('../constants');
+const saveNotification = require('../utils/saveNotification');
 
 const lastDayOfMonthScheduler = CronJob.schedule('* * 28-31 * *', async () => {
   const today = new Date();
@@ -294,11 +295,11 @@ const sendBonusToAgent = async (agentId, bonus) => {
     return state;
   }
 
+  const notifData = {
+    title: `Monthly bonus received`,
+    body: `${bonus} monthly bonus received for this month.`,
+  };
   try {
-    const notifData = {
-      title: `Monthly bonus received`,
-      body: `${bonus} monthly bonus received for this month.`,
-    };
     await sendNotification(
       notifData,
       agent.device_type,
@@ -309,6 +310,23 @@ const sendBonusToAgent = async (agentId, bonus) => {
     );
   } catch (error) {
     state.error = `Error sending monthly bonus notification to agent [${
+      agent.id
+    }]:', ${JSON.stringify(error)}`;
+    return state;
+  }
+
+  try {
+    await saveNotification(
+      'agent',
+      agent.id,
+      notifData.title,
+      notifData.body,
+      notifData,
+      agent.device_token,
+      agent.device_type
+    );
+  } catch (error) {
+    state.error = `Error saving monthly bonus notification to agent [${
       agent.id
     }]:', ${JSON.stringify(error)}`;
   }

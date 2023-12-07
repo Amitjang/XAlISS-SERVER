@@ -129,3 +129,17 @@ model bonus_history {
 
   @@unique([contract_id, agent_id, date], map: "contract_id_agent_id_date")
 }
+
+model notifications {
+  id           Int      @id @default(autoincrement())
+  type         String   @default("") @db.VarChar(255)
+  ref_id       Int      @default(0)
+  title        String?  @db.VarChar(255)
+  body         String?  @db.VarChar(255)
+  data         Json?
+  device_token String?  @db.VarChar(255)
+  device_type  String?  @db.VarChar(255)
+  topic        String?  @db.VarChar(255)
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+  updated_at   DateTime @default(now()) @db.Timestamp(0)
+}
