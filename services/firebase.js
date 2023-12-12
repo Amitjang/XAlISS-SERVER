@@ -2,9 +2,7 @@ const firebase = require('firebase-admin');
 const { getMessaging } = require('firebase-admin/messaging');
 
 const firebaseSACert = require('../xaliss-agent-app-firebase-adminsdk-71a45-3b3ccdd427.json');
-
-const notifImageURL =
-  'https://firebasestorage.googleapis.com/v0/b/xaliss-agent-app.appspot.com/o/ic_launcher_android.png?alt=media&token=f9402d34-dcfd-40e9-9b90-a43d59e979b2';
+const { notifImageURL } = require('../constants');
 
 const initializeFirebaseApp = () => {
   firebase.initializeApp({

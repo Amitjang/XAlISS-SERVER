@@ -19,6 +19,7 @@ const {
   COMPANY_WALLET_PUBLIC_KEY,
   xoftAsset,
   COMPANY_WALLET_SECRET_KEY,
+  notifImageURL,
 } = require('../constants');
 const saveNotification = require('../utils/saveNotification');
 
@@ -298,6 +299,7 @@ const sendBonusToAgent = async (agentId, bonus) => {
   const notifData = {
     title: `Monthly bonus received`,
     body: `${bonus} monthly bonus received for this month.`,
+    imageUrl: notifImageURL,
   };
   try {
     await sendNotification(
@@ -321,9 +323,11 @@ const sendBonusToAgent = async (agentId, bonus) => {
       agent.id,
       notifData.title,
       notifData.body,
+      notifData.imageUrl,
       notifData,
       agent.device_token,
-      agent.device_type
+      agent.device_type,
+      null
     );
   } catch (error) {
     state.error = `Error saving monthly bonus notification to agent [${

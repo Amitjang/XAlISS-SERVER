@@ -96,6 +96,9 @@ const savingFees = {
 const COMPANY_WALLET_PUBLIC_KEY = process.env.COMPANY_WALLET_PUBLIC_KEY;
 const COMPANY_WALLET_SECRET_KEY = process.env.COMPANY_WALLET_SECRET_KEY;
 
+const notifImageURL =
+  'https://firebasestorage.googleapis.com/v0/b/xaliss-agent-app.appspot.com/o/ic_launcher_android.png?alt=media&token=f9402d34-dcfd-40e9-9b90-a43d59e979b2';
+
 module.exports = {
   pinRegex,
   dobRegex,
@@ -108,4 +111,5 @@ module.exports = {
   savingFees,
   COMPANY_WALLET_PUBLIC_KEY,
   COMPANY_WALLET_SECRET_KEY,
+  notifImageURL,
 };

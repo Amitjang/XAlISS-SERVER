@@ -3,6 +3,7 @@ const prisma = require('../services/prisma');
 const CustomError = require('../utils/CustomError');
 const { sendNotification } = require('../services/firebase');
 const saveNotification = require('../utils/saveNotification');
+const { notifImageURL } = require('../constants');
 
 /**
  * Send Notification
@@ -12,6 +13,7 @@ const saveNotification = require('../utils/saveNotification');
 async function handleSendNotification(req, res) {
   const { type, refId, token, topic, title, body, data } = req.body;
   let deviceType = 'android';
+  let deviceToken = token;
 
   const isTokenPresent = token !== undefined && token !== null;
   const isTopicPresent = topic !== undefined && topic !== null;
@@ -44,6 +46,9 @@ async function handleSendNotification(req, res) {
           code: 404,
           message: `No agent found for id: ${refId}`,
         });
+      if (agent.device_token.length === 0)
+        throw new Error(`Cannot send notification, no device token found`);
+      if (agent.device_token !== token) deviceToken = agent.device_token;
     } else if (type === 'user') {
       const user = await prisma.users.findFirst({
         where: { id: parseInt(refId, 10) },
@@ -70,14 +75,15 @@ async function handleSendNotification(req, res) {
   }
 
   try {
-    await sendNotification(data, deviceType, token, topic, title, body);
+    await sendNotification(data, deviceType, deviceToken, topic, title, body);
     await saveNotification(
       type,
       parseInt(refId, 10),
       title,
       body,
+      notifImageURL,
       data,
-      token,
+      deviceToken,
       deviceType,
       topic
     );

@@ -6,15 +6,18 @@ const prisma = require('../services/prisma');
  * @param {number} ref_id Reference id of entity
  * @param {string} title Title of notification
  * @param {string} body Body of notification
+ * @param {string} imageUrl Image of notification
  * @param {any} data Data object of notification
  * @param {string} device_token Device token
  * @param {string} device_type Device type
+ * @param {string | null} topic Topic of notification
  */
 const saveNotification = async (
   type,
   ref_id,
   title,
   body,
+  imageUrl = '',
   data,
   device_token,
   device_type,
@@ -29,7 +32,7 @@ const saveNotification = async (
       data: JSON.stringify(data),
       device_token: device_token,
       device_type: device_type,
-      topic: null,
+      topic: topic,
     },
   });
 };
