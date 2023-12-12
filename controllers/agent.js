@@ -574,6 +574,9 @@ async function handleGetAgentNotifications(req, res) {
         type: 'agent',
         ref_id: parseInt(agentId, 10),
       },
+      orderBy: {
+        created_at: 'desc',
+      },
     });
   } catch (error) {
     return res.status(500).json({

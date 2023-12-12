@@ -29,6 +29,7 @@ const saveNotification = async (
       ref_id: ref_id,
       title: title,
       body: body,
+      imageUrl: imageUrl,
       data: JSON.stringify(data),
       device_token: device_token,
       device_type: device_type,
