@@ -20,8 +20,14 @@ const {
   xoftAsset,
   COMPANY_WALLET_SECRET_KEY,
   notifImageURL,
+  CREATE_ACCOUNT_PUBLIC_KEY,
+  CREATE_ACCOUNT_SECRET_KEY,
 } = require('../constants');
 const saveNotification = require('../utils/saveNotification');
+const {
+  getStellarAccount,
+  createStellarAccount,
+} = require('../utils/createStellarAccount');
 
 const lastDayOfMonthScheduler = CronJob.schedule('* * 28-31 * *', async () => {
   const today = new Date();
@@ -147,7 +153,7 @@ const chargeUserFees = async (userId, fees) => {
   // get user stellar wallet
   let userWallet;
   try {
-    userWallet = await server.loadAccount(user.account_id);
+    userWallet = await getStellarAccount(user.account_id);
   } catch (error) {
     if (error instanceof StellarSdk.NotFoundError) {
       state.error = `No account found for user with phone number: ${user.dial_code} ${user.phone_number}`;
@@ -207,35 +213,51 @@ const sendBonusToAgent = async (agentId, bonus) => {
     const bonusKeyPair = StellarSdk.Keypair.random();
 
     // Create a bonus wallet
+    // try {
+    //   await server.friendbot(bonusKeyPair.publicKey()).call();
+    // } catch (error) {
+    //   state.error = `Error creating bonus wallet for agent: ${
+    //     agent.id
+    //   }, ${JSON.stringify(error)}`;
+    //   return state;
+    // }
+
+    // const bonusWallet = await getStellarAccount(bonusKeyPair.publicKey());
+
+    // const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
+    //   bonusWallet,
+    //   {
+    //     fee: '100000',
+    //     networkPassphrase: StellarSdk.Networks.TESTNET,
+    //   }
+    // )
+    //   .addOperation(
+    //     StellarSdk.Operation.changeTrust({
+    //       asset: xoftAsset,
+    //       limit: '100000', // Set your desired limit
+    //     })
+    //   )
+    //   .setTimeout(60)
+    //   .build();
+
+    // bonusAccountTransaction.sign(bonusKeyPair);
+    // await server.submitTransaction(bonusAccountTransaction); // Sign the transaction with your secret key
+
+    let bonusWallet;
     try {
-      await server.friendbot(bonusKeyPair.publicKey()).call();
+      await createStellarAccount(
+        'agent',
+        CREATE_ACCOUNT_PUBLIC_KEY,
+        CREATE_ACCOUNT_SECRET_KEY,
+        bonusKeyPair
+      );
+      bonusWallet = await getStellarAccount(bonusKeyPair.publicKey());
     } catch (error) {
-      state.error = `Error creating bonus wallet for agent: ${
+      state.error = `Error creating bonus wallet, for agent: ${
         agent.id
-      }, ${JSON.stringify(error)}`;
+      }: ${JSON.stringify(error)}`;
       return state;
     }
-
-    const bonusWallet = await server.loadAccount(bonusKeyPair.publicKey());
-
-    const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
-      bonusWallet,
-      {
-        fee: '100000',
-        networkPassphrase: StellarSdk.Networks.TESTNET,
-      }
-    )
-      .addOperation(
-        StellarSdk.Operation.changeTrust({
-          asset: xoftAsset,
-          limit: '100000', // Set your desired limit
-        })
-      )
-      .setTimeout(60)
-      .build();
-
-    bonusAccountTransaction.sign(bonusKeyPair);
-    await server.submitTransaction(bonusAccountTransaction); // Sign the transaction with your secret key
 
     try {
       await prisma.agents.update({
@@ -260,7 +282,7 @@ const sendBonusToAgent = async (agentId, bonus) => {
   // get user stellar wallet
   let companyWallet;
   try {
-    companyWallet = await server.loadAccount(COMPANY_WALLET_PUBLIC_KEY);
+    companyWallet = await getStellarAccount(COMPANY_WALLET_PUBLIC_KEY);
   } catch (error) {
     if (error instanceof StellarSdk.NotFoundError) {
       state.error = `Invalid company wallet public key, no account found`;
@@ -400,7 +422,7 @@ const sendMoney = (sender, receiver, amount, keyPair, memo) => {
 
   const transaction = new StellarSdk.TransactionBuilder(sender, {
     fee: StellarSdk.BASE_FEE,
-    networkPassphrase: StellarSdk.Networks.TESTNET,
+    networkPassphrase: StellarSdk.Networks.PUBLIC,
   })
     .addOperation(
       StellarSdk.Operation.payment({

@@ -9,6 +9,7 @@ const server = require('../services/stellar');
 const CustomError = require('../utils/CustomError');
 const { xoftAsset, userTypes } = require('../constants');
 const getContractIntervals = require('../utils/getContractIntervals');
+const { getStellarAccount } = require('../utils/createStellarAccount');
 
 async function handleSendPayment(req, res) {
   const {
@@ -181,7 +182,7 @@ async function handleSendPayment(req, res) {
 
   let senderAcc;
   try {
-    senderAcc = await server.loadAccount(sender.account_id);
+    senderAcc = await getStellarAccount(sender.account_id);
   } catch (err) {
     if (err instanceof StellarSdk.NotFoundError) {
       return res.status(500).json({
@@ -221,7 +222,7 @@ async function handleSendPayment(req, res) {
   try {
     const transaction = new StellarSdk.TransactionBuilder(senderAcc, {
       fee: StellarSdk.BASE_FEE,
-      networkPassphrase: StellarSdk.Networks.TESTNET,
+      networkPassphrase: StellarSdk.Networks.PUBLIC,
     })
       .addOperation(
         StellarSdk.Operation.payment({
@@ -423,7 +424,7 @@ async function handleSendPaymentToAgent(req, res) {
 
   let senderAcc;
   try {
-    senderAcc = await server.loadAccount(sender.account_id);
+    senderAcc = await getStellarAccount(sender.account_id);
   } catch (err) {
     if (err instanceof StellarSdk.NotFoundError) {
       return res.status(500).json({
@@ -462,7 +463,7 @@ async function handleSendPaymentToAgent(req, res) {
   try {
     const transaction = new StellarSdk.TransactionBuilder(senderAcc, {
       fee: StellarSdk.BASE_FEE,
-      networkPassphrase: StellarSdk.Networks.TESTNET,
+      networkPassphrase: StellarSdk.Networks.PUBLIC,
     })
       .addOperation(
         StellarSdk.Operation.payment({

@@ -12,7 +12,13 @@ const {
   getEndDateForContractType,
   getSavingAndWithdrawTypeForContractType,
   xoftAsset,
+  CREATE_ACCOUNT_PUBLIC_KEY,
+  CREATE_ACCOUNT_SECRET_KEY,
 } = require('../constants');
+const {
+  getStellarAccount,
+  createStellarAccount,
+} = require('../utils/createStellarAccount');
 
 async function handleCreateUser(req, res) {
   const file = req.file;
@@ -80,36 +86,52 @@ async function handleCreateUser(req, res) {
 
   const pair = StellarSdk.Keypair.random(); // Generate key pair
 
-  // Create a new account
+  // // Create a new account
+  // try {
+  //   await server.friendbot(pair.publicKey()).call();
+  // } catch (error) {
+  //   return res.status(500).json({
+  //     message: 'Error while creating account: ' + JSON.stringify(error),
+  //   });
+  // }
+  // const account = await server.loadAccount(pair.publicKey());
+  // Create a trustline to the XOFT token
+  // const transaction = new StellarSdk.TransactionBuilder(account, {
+  //   fee: '100000',
+  //   networkPassphrase: StellarSdk.Networks.TESTNET,
+  // })
+  //   .addOperation(
+  //     StellarSdk.Operation.changeTrust({
+  //       asset: xoftAsset,
+  //       limit: '100000', // Set your desired limit
+  //     })
+  //   )
+  //   .setTimeout(60)
+  //   .build();
+  // transaction.sign(pair);
+  // await server.submitTransaction(transaction); // Sign the transaction with your secret key
+
+  let account;
   try {
-    await server.friendbot(pair.publicKey()).call();
+    await createStellarAccount(
+      'user',
+      CREATE_ACCOUNT_PUBLIC_KEY,
+      CREATE_ACCOUNT_SECRET_KEY,
+      pair
+    );
+    account = await getStellarAccount(pair.publicKey());
   } catch (error) {
     return res.status(500).json({
-      message: 'Error while creating account: ' + JSON.stringify(error),
+      message: 'Error creating wallet',
+      status: 'error',
+      error: error,
+      extras: error?.response?.data?.extras,
     });
   }
 
+  let user;
   try {
-    const account = await server.loadAccount(pair.publicKey());
-
-    // Create a trustline to the XOFT token
-    const transaction = new StellarSdk.TransactionBuilder(account, {
-      fee: '100000',
-      networkPassphrase: StellarSdk.Networks.TESTNET,
-    })
-      .addOperation(
-        StellarSdk.Operation.changeTrust({
-          asset: xoftAsset,
-          limit: '100000', // Set your desired limit
-        })
-      )
-      .setTimeout(60)
-      .build();
-
-    transaction.sign(pair);
-    await server.submitTransaction(transaction); // Sign the transaction with your secret key
-
-    const user = await prisma.users.create({
+    user = await prisma.users.create({
       data: {
         agent_id: parseInt(agentId, 10),
 
@@ -132,20 +154,21 @@ async function handleCreateUser(req, res) {
         verification_proof_image_url: file.filename,
       },
     });
-
-    const userRes = new User(user);
-    userRes.addAccountDetails(account);
-
-    return res.status(201).json({
-      message: 'User created successfully',
-      user: userRes.toJson(),
-    });
   } catch (err) {
     console.log(err);
     return res.status(400).json({
       message: 'Error while creating account: ' + JSON.stringify(err),
     });
   }
+
+  const userRes = new User(user);
+  userRes.addAccountDetails(account);
+
+  return res.status(201).json({
+    message: 'User created successfully',
+    user: userRes.toJson(),
+    status: 'success',
+  });
 }
 
 async function handleGetUser(req, res) {
@@ -168,7 +191,7 @@ async function handleGetUser(req, res) {
         message: `No user found for id: ${userId}`,
       });
 
-    const account = await server.loadAccount(user.account_id);
+    const account = await getStellarAccount(user.account_id);
 
     const userRes = new User(user);
     userRes.addAccountDetails(account);

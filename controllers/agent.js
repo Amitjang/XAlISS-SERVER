@@ -8,8 +8,16 @@ const prisma = require('../services/prisma');
 const CustomError = require('../utils/CustomError');
 
 const Agent = require('../models/Agent');
-const { xoftAsset } = require('../constants');
+const {
+  xoftAsset,
+  CREATE_ACCOUNT_PUBLIC_KEY,
+  CREATE_ACCOUNT_SECRET_KEY,
+} = require('../constants');
 const User = require('../models/User');
+const {
+  createStellarAccount,
+  getStellarAccount,
+} = require('../utils/createStellarAccount');
 
 async function handleCreateAgent(req, res) {
   const file = req.file;
@@ -65,72 +73,114 @@ async function handleCreateAgent(req, res) {
     }
   }
 
-  const pair = StellarSdk.Keypair.random(); // Generate key pair
-  const bonusKeyPair = StellarSdk.Keypair.random(); // Generate key pair
+  const primaryWalletKeyPair = StellarSdk.Keypair.random(); // Generate key pair
+  const bonusWalletKeyPair = StellarSdk.Keypair.random(); // Generate key pair
 
-  // Create a new account
+  // // Create a new account
+  // try {
+  //   await server.friendbot(pair.publicKey()).call();
+  // } catch (error) {
+  //   console.log(error);
+  //   return res.status(500).json({
+  //     message: 'Error while creating account: ' + JSON.stringify(error),
+  //   });
+  // }
+  // // Create a bonus account
+  // try {
+  //   await server.friendbot(bonusKeyPair.publicKey()).call();
+  // } catch (error) {
+  //   return res.status(500).json({
+  //     message: 'Error while creating bonus wallet: ' + JSON.stringify(error),
+  //   });
+  // }
+
+  // const account = await server.loadAccount(pair.publicKey());
+  // const bonusAccount = await server.loadAccount(bonusKeyPair.publicKey());
+
+  // const transaction = new StellarSdk.TransactionBuilder(account, {
+  //   fee: '100000',
+  //   networkPassphrase: StellarSdk.Networks.PUBLIC,
+  // })
+  //   .addOperation(
+  //     StellarSdk.Operation.changeTrust({
+  //       asset: xoftAsset,
+  //       // limit: '100000', // Set your desired limit
+  //     })
+  //   )
+  //   .setTimeout(60)
+  //   .build();
+
+  // transaction.sign(pair);
+  // await server.submitTransaction(transaction); // Sign the transaction with your secret key
+
+  // const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
+  //   bonusAccount,
+  //   {
+  //     fee: '100000',
+  //     networkPassphrase: StellarSdk.Networks.PUBLIC,
+  //   }
+  // )
+  //   .addOperation(
+  //     StellarSdk.Operation.changeTrust({
+  //       asset: xoftAsset,
+  //       // limit: '100000', // Set your desired limit
+  //     })
+  //   )
+  //   .setTimeout(60)
+  //   .build();
+
+  // bonusAccountTransaction.sign(bonusKeyPair);
+  // await server.submitTransaction(bonusAccountTransaction); // Sign the transaction with your secret key
+
+  let primaryAccount;
   try {
-    await server.friendbot(pair.publicKey()).call();
+    await createStellarAccount(
+      'agent',
+      CREATE_ACCOUNT_PUBLIC_KEY,
+      CREATE_ACCOUNT_SECRET_KEY,
+      primaryWalletKeyPair
+    );
+    primaryAccount = await getStellarAccount(primaryWalletKeyPair.publicKey());
   } catch (error) {
+    console.error(error);
+    console.error('extras:', error?.response?.data?.extras);
     return res.status(500).json({
-      message: 'Error while creating account: ' + JSON.stringify(error),
+      message: 'Error creating primary wallet',
+      status: 'error',
+      error: error,
+      extras: error?.response?.data?.extras,
     });
   }
-  // Create a bonus account
+
+  let bonus_wallet_public_key = '';
+  let bonus_wallet_secret_key = '';
   try {
-    await server.friendbot(bonusKeyPair.publicKey()).call();
+    await createStellarAccount(
+      'agent',
+      CREATE_ACCOUNT_PUBLIC_KEY,
+      CREATE_ACCOUNT_SECRET_KEY,
+      bonusWalletKeyPair
+    );
+    const bonusAccount = await getStellarAccount(
+      bonusWalletKeyPair.publicKey()
+    );
+
+    bonus_wallet_public_key = bonusAccount.id;
+    bonus_wallet_secret_key = bonusWalletKeyPair.secret();
   } catch (error) {
-    return res.status(500).json({
-      message: 'Error while creating bonus wallet: ' + JSON.stringify(error),
-    });
+    console.error(error);
+    console.error('extras:', error?.response?.data?.extras);
   }
 
+  let agent;
   try {
-    const account = await server.loadAccount(pair.publicKey());
-    const bonusAccount = await server.loadAccount(bonusKeyPair.publicKey());
-
-    const transaction = new StellarSdk.TransactionBuilder(account, {
-      fee: '100000',
-      networkPassphrase: StellarSdk.Networks.TESTNET,
-    })
-      .addOperation(
-        StellarSdk.Operation.changeTrust({
-          asset: xoftAsset,
-          limit: '100000', // Set your desired limit
-        })
-      )
-      .setTimeout(60)
-      .build();
-
-    transaction.sign(pair);
-    await server.submitTransaction(transaction); // Sign the transaction with your secret key
-
-    const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
-      bonusAccount,
-      {
-        fee: '100000',
-        networkPassphrase: StellarSdk.Networks.TESTNET,
-      }
-    )
-      .addOperation(
-        StellarSdk.Operation.changeTrust({
-          asset: xoftAsset,
-          limit: '100000', // Set your desired limit
-        })
-      )
-      .setTimeout(60)
-      .build();
-
-    bonusAccountTransaction.sign(bonusKeyPair);
-    await server.submitTransaction(bonusAccountTransaction); // Sign the transaction with your secret key
-
     const hashedPin = await bcrypt.hash(pin.trim(), 10);
     const hashedTransactionPin = await bcrypt.hash(transactionPin.trim(), 10);
 
-    const agent = await prisma.agents.create({
+    agent = await prisma.agents.create({
       data: {
-        account_id: account.id,
-        account_secret: pair.secret(),
+        account_id: primaryAccount.id,
+        account_secret: primaryWalletKeyPair.secret(),
         dial_code: dialCode.trim(),
         phone_number: phoneNumber.trim(),
         name: name.trim(),
@@ -151,27 +201,27 @@ async function handleCreateAgent(req, res) {
         date_of_birth: dateOfBirth.trim(),
         transaction_pin: hashedTransactionPin,
         verification_proof_image_url: file.filename,
-        bonus_wallet_public_key: bonusAccount.id,
-        bonus_wallet_secret_key: bonusKeyPair.secret(),
+        bonus_wallet_public_key: bonus_wallet_public_key,
+        bonus_wallet_secret_key: bonus_wallet_secret_key,
         device_token: deviceToken ?? '',
         device_type: deviceType ?? '',
       },
     });
-
-    const agentRes = new Agent(agent);
-    agentRes.addAccountDetails(account);
-    agentRes.addBonusAccountDetails(bonusAccount);
-
-    return res.status(201).json({
-      message: 'Agent created successfully',
-      agent: agentRes.toJson(),
-    });
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.error(error);
     return res.status(400).json({
-      message: '(119) Error while creating account: ' + JSON.stringify(err),
+      message: 'Error while saving agent: ' + JSON.stringify(error),
     });
   }
+
+  const agentRes = new Agent(agent);
+  agentRes.addAccountDetails(primaryAccount);
+  agentRes.addBonusAccountDetails(bonusAccount);
+
+  return res.status(201).json({
+    message: 'Agent created successfully',
+    agent: agentRes.toJson(),
+  });
 }
 
 async function handleGetAgent(req, res) {
@@ -190,9 +240,9 @@ async function handleGetAgent(req, res) {
 
     const agentRes = new Agent(agent);
 
-    const account = await server.loadAccount(agent.account_id);
+    const account = await getStellarAccount(agent.account_id);
     if (agent.bonus_wallet_public_key.length > 0) {
-      const bonusWallet = await server.loadAccount(
+      const bonusWallet = await getStellarAccount(
         agent.bonus_wallet_public_key
       );
       agentRes.addBonusAccountDetails(bonusWallet);
@@ -234,7 +284,7 @@ async function handleAgentLogin(req, res) {
       });
     }
 
-    const account = await server.loadAccount(agent.account_id);
+    const account = await getStellarAccount(agent.account_id);
     let bonusWallet;
 
     const updateData = {
@@ -246,41 +296,45 @@ async function handleAgentLogin(req, res) {
     if (agent.bonus_wallet_public_key.length === 0) {
       const bonusKeyPair = StellarSdk.Keypair.random();
 
-      // Create a bonus wallet
-      try {
-        await server.friendbot(bonusKeyPair.publicKey()).call();
-      } catch (error) {
-        return res.status(500).json({
-          message:
-            'Error while initiating bonus wallet: ' + JSON.stringify(error),
-        });
-      }
+      // // Create a bonus wallet
+      // try {
+      //   await server.friendbot(bonusKeyPair.publicKey()).call();
+      // } catch (error) {
+      //   return res.status(500).json({
+      //     message:
+      //       'Error while initiating bonus wallet: ' + JSON.stringify(error),
+      //   });
+      // }
+      // const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
+      //   bonusWallet,
+      //   {
+      //     fee: '100000',
+      //     networkPassphrase: StellarSdk.Networks.TESTNET,
+      //   }
+      // )
+      //   .addOperation(
+      //     StellarSdk.Operation.changeTrust({
+      //       asset: xoftAsset,
+      //       limit: '100000', // Set your desired limit
+      //     })
+      //   )
+      //   .setTimeout(60)
+      //   .build();
+      // bonusAccountTransaction.sign(bonusKeyPair);
+      // await server.submitTransaction(bonusAccountTransaction);
 
-      bonusWallet = await server.loadAccount(bonusKeyPair.publicKey());
-
-      const bonusAccountTransaction = new StellarSdk.TransactionBuilder(
-        bonusWallet,
-        {
-          fee: '100000',
-          networkPassphrase: StellarSdk.Networks.TESTNET,
-        }
-      )
-        .addOperation(
-          StellarSdk.Operation.changeTrust({
-            asset: xoftAsset,
-            limit: '100000', // Set your desired limit
-          })
-        )
-        .setTimeout(60)
-        .build();
-
-      bonusAccountTransaction.sign(bonusKeyPair);
-      await server.submitTransaction(bonusAccountTransaction); // Sign the transaction with your secret key
+      await createStellarAccount(
+        'agent',
+        CREATE_ACCOUNT_PUBLIC_KEY,
+        CREATE_ACCOUNT_SECRET_KEY,
+        bonusKeyPair
+      );
+      bonusWallet = await getStellarAccount(bonusKeyPair.publicKey());
 
       updateData.bonus_wallet_public_key = bonusWallet.account_id;
       updateData.bonus_wallet_secret_key = bonusKeyPair.secret();
     } else {
-      bonusWallet = await server.loadAccount(agent.bonus_wallet_public_key);
+      bonusWallet = await getStellarAccount(agent.bonus_wallet_public_key);
     }
 
     const agentRes = new Agent(agent);
