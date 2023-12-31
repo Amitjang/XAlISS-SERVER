@@ -154,6 +154,7 @@ async function handleCreateAgent(req, res) {
 
   let bonus_wallet_public_key = '';
   let bonus_wallet_secret_key = '';
+  let bonusAccount;
   try {
     await createStellarAccount(
       'agent',
@@ -161,9 +162,7 @@ async function handleCreateAgent(req, res) {
       CREATE_ACCOUNT_SECRET_KEY,
       bonusWalletKeyPair
     );
-    const bonusAccount = await getStellarAccount(
-      bonusWalletKeyPair.publicKey()
-    );
+    bonusAccount = await getStellarAccount(bonusWalletKeyPair.publicKey());
 
     bonus_wallet_public_key = bonusAccount.id;
     bonus_wallet_secret_key = bonusWalletKeyPair.secret();
