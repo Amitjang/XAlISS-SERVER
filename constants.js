@@ -102,6 +102,11 @@ const CREATE_ACCOUNT_SECRET_KEY = process.env.CREATE_ACCOUNT_SECRET_KEY;
 const notifImageURL =
   'https://firebasestorage.googleapis.com/v0/b/xaliss-agent-app.appspot.com/o/ic_launcher_android.png?alt=media&token=f9402d34-dcfd-40e9-9b90-a43d59e979b2';
 
+const GoIP_BASE_URL = process.env.GoIP_BASE_URL;
+const GoIP_URL = process.env.GoIP_URL;
+const GoIP_USERNAME = process.env.GoIP_USERNAME;
+const GoIP_PASSWORD = process.env.GoIP_PASSWORD;
+
 module.exports = {
   pinRegex,
   dobRegex,
@@ -118,4 +123,9 @@ module.exports = {
 
   CREATE_ACCOUNT_PUBLIC_KEY,
   CREATE_ACCOUNT_SECRET_KEY,
+
+  GoIP_BASE_URL,
+  GoIP_URL,
+  GoIP_USERNAME,
+  GoIP_PASSWORD,
 };

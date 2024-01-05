@@ -10,8 +10,14 @@ const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
 const healthRouter = require('./routes/health');
 const notificationRouter = require('./routes/notification');
+
 const startSchedulers = require('./cronjob');
+const { notifications } = require('./notifications');
+
 const { initializeFirebaseApp } = require('./services/firebase');
+
+const { sendSMS } = require('./utils/sendSMS');
+const { getNotificationText } = require('./utils/getNotificationText');
 
 dotenv.config();
 const app = express();
@@ -43,6 +49,42 @@ app.use('/images', express.static(path.join(__dirname, 'uploads')));
 // Start the sendBonus scheduler
 initializeFirebaseApp();
 startSchedulers();
+
+(async () => {
+  // try {
+  const res = await sendSMS(
+    '',
+    '27665773560',
+    getNotificationText(notifications['en'].send_money, {
+      agent_full_name: 'Agent X',
+      customer_last_name: 'Customer Y',
+      agent_phone_number: '+1 (123) 456-789',
+
+      amount: '[[[150 rupya dega]]]',
+      sender_phone_number: '[[[ye mera samsoong ka number hai]]]',
+      balance: '[[[taalis lakh]]]',
+      transfer_purpose: '[[[aise hi, sexy lag raha tha]]]',
+    })
+  );
+
+  console.log(res);
+
+  // const json = await res.json();
+  // console.log(json);
+  // } catch (error) {
+  //   console.error('Error encountered');
+  //   console.error(error);
+  // }
+})();
+
+// console.log(
+//   getNotificationText(notifications['fr'].send_money, {
+//     amount: '[[[150 rupya dega]]]',
+//     sender_phone_number: '[[[ye mera samsoong ka number hai]]]',
+//     balance: '[[[taalis lakh]]]',
+//     transfer_purpose: '[[[aise hi, sexy lag raha tha]]]',
+//   })
+// );
 
 app.listen(PORT, () => {
   console.log(`🚀 Server ready at: http://localhost:${PORT}`);

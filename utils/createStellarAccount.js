@@ -21,7 +21,7 @@ async function createStellarAccount(
   sourceAccountSecretKey,
   destinationAccountKeyPair
 ) {
-  let startingBalance = accountType === 'agent' ? 3 : 2;
+  let startingBalance = accountType === 'agent' ? 2 : 2;
   const sourceAccount = await getStellarAccount(sourceAccountPublicKey);
   const sourceAccountKeyPair = Keypair.fromSecret(sourceAccountSecretKey);
 
