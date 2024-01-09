@@ -1,7 +1,14 @@
 const StellarSdk = require('stellar-sdk');
 const bcrypt = require('bcryptjs');
 const { request, response } = require('express');
-const { isToday, closestTo, isFuture, set } = require('date-fns');
+const {
+  isToday,
+  closestTo,
+  isFuture,
+  set,
+  format,
+  isAfter,
+} = require('date-fns');
 
 const prisma = require('../services/prisma');
 const server = require('../services/stellar');
@@ -10,6 +17,9 @@ const CustomError = require('../utils/CustomError');
 const { xoftAsset, userTypes } = require('../constants');
 const getContractIntervals = require('../utils/getContractIntervals');
 const { getStellarAccount } = require('../utils/createStellarAccount');
+const { sendSMS } = require('../utils/sendSMS');
+const { getNotificationText } = require('../utils/getNotificationText');
+const { notifications } = require('../notifications');
 
 async function handleSendPayment(req, res) {
   const {
@@ -119,6 +129,9 @@ async function handleSendPayment(req, res) {
     receiver_id: receiver.id,
     receiver_type: userTypes[senderAndReceiverType.receiver],
   };
+
+  let intervals;
+  let nextPaymentDate;
   /*
    / if the receiver is a user && contract id is present
    / get the contract, calculate the intervals, get closest date
@@ -147,7 +160,7 @@ async function handleSendPayment(req, res) {
         });
       }
 
-      const intervals = getContractIntervals(
+      intervals = getContractIntervals(
         contract.saving_type,
         contract.first_payment_date,
         contract.end_date
@@ -156,7 +169,7 @@ async function handleSendPayment(req, res) {
       const today = new Date();
       today.setHours(0, 0, 0);
 
-      const nextPaymentDate = closestTo(today, intervals);
+      nextPaymentDate = closestTo(today, intervals);
 
       if (isToday(nextPaymentDate)) {
         const { isDone } = await isPaymentDone(contract.id, nextPaymentDate);
@@ -245,8 +258,6 @@ async function handleSendPayment(req, res) {
     await prisma.transactions.create({
       data: txn,
     });
-
-    return res.status(201).json({ message: 'Success', status: 'success' });
   } catch (error) {
     console.error('Something went wrong!', error);
     return res.status(500).json({
@@ -258,6 +269,61 @@ async function handleSendPayment(req, res) {
     // already built transaction:
     // server.submitTransaction(transaction);
   }
+
+  const smsData = {
+    dial_code: '',
+    phone_number: '',
+    text: '',
+  };
+
+  try {
+    const stellarAccount = await getStellarAccount(receiver.account_id);
+    const account_balance = stellarAccount.balances.find(
+      i => i.asset_code === 'XOFT'
+    ).balance;
+
+    if (
+      senderAndReceiverType.receiver === 'User' &&
+      contractId !== undefined &&
+      contractId !== null
+    ) {
+      const nextCollectDate = intervals.find(i => i > nextPaymentDate);
+      const collectRemaining = intervals.reduce(
+        (acc, cur) => (isAfter(cur, nextPaymentDate) ? acc + 1 : acc),
+        0
+      );
+      const total_amount_saved_by_end_of_contract = (
+        intervals.length * (amount ?? 0)
+      ).toFixed(7);
+
+      smsData.dial_code = receiver.dial_code;
+      smsData.phone_number = receiver.phone_number;
+      // FIX: notification language according to reciever
+      smsData.text = getNotificationText(notifications.fr.saving_collection, {
+        customer_last_name: receiver.name,
+        amount_collected: (amount ?? 0).toFixed(7),
+        account_balance: account_balance,
+        number_of_collect_remaining: collectRemaining,
+        total_ammount_saved_by_end_of_contract:
+          total_amount_saved_by_end_of_contract,
+        date_of_next_collect: format(nextCollectDate, 'dd/MM/yyy'),
+      });
+    } else {
+      smsData.text = getNotificationText(notifications.fr.send_money, {
+        amount: (amount ?? 0).toFixed(7),
+        sender_phone_number: `${sender.dial_code} ${sender.phone_number}`,
+        transfer_purpose: purpose,
+        balance: account_balance,
+      });
+    }
+    await sendSMS(smsData.dial_code, smsData.phone_number, smsData.text);
+  } catch (error) {
+    console.error(
+      `Error sending payment SMS to: ${user.dial_code} ${user.phone_number}, error: ${error}`
+    );
+  }
+
+  return res.status(201).json({ message: 'Success', status: 'success' });
 }
 
 /**

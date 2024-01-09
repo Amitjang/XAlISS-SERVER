@@ -19,6 +19,10 @@ const {
   getStellarAccount,
   createStellarAccount,
 } = require('../utils/createStellarAccount');
+const { sendSMS } = require('../utils/sendSMS');
+const { getNotificationText } = require('../utils/getNotificationText');
+const { notifications } = require('../notifications');
+const getContractIntervals = require('../utils/getContractIntervals');
 
 async function handleCreateUser(req, res) {
   const file = req.file;
@@ -42,8 +46,9 @@ async function handleCreateUser(req, res) {
       .status(400)
       .json({ message: 'verification-proof is required', status: 'error' });
 
+  let agent;
   try {
-    const agent = await prisma.agents.findFirst({
+    agent = await prisma.agents.findFirst({
       where: { id: parseInt(agentId, 10) },
     });
     if (!agent)
@@ -159,6 +164,21 @@ async function handleCreateUser(req, res) {
     return res.status(400).json({
       message: 'Error while creating account: ' + JSON.stringify(err),
     });
+  }
+
+  // Send SMS to customer for account creation
+  try {
+    // FIX: send notification according the user language
+    const smsText = getNotificationText(notifications.fr.customer_create, {
+      customer_last_name: user.name,
+      agent_full_name: agent.name,
+      agent_phone_number: `${agent.dial_code} ${agent.phone_number}`,
+    });
+    await sendSMS(user.dial_code, user.phone_number, smsText);
+  } catch (error) {
+    console.error(
+      `Error sending SMS to customer: ${user.dial_code} ${user.phone_number}, error: ${error}`
+    );
   }
 
   const userRes = new User(user);
@@ -296,8 +316,9 @@ async function handleCreateContractUser(req, res) {
     getSavingAndWithdrawTypeForContractType(contractType);
   const endDate = getEndDateForContractType(contractType, first_payment_date);
 
+  let contract;
   try {
-    const contract = await prisma.contracts.create({
+    contract = await prisma.contracts.create({
       data: {
         agent_id: agent.id,
         user_id: user.id,
@@ -320,18 +341,44 @@ async function handleCreateContractUser(req, res) {
         lng: parseFloat(lng),
       },
     });
-
-    return res.status(201).json({
-      contract: contract,
-      message: 'Successfully created contract',
-      status: 'status',
-    });
   } catch (error) {
     return res.status(500).json({
       message: error?.message ?? 'Something went wrong!',
       status: 'error',
     });
   }
+
+  const intervals = getContractIntervals(
+    saving_type,
+    firstPaymentDate,
+    endDate
+  );
+
+  // FIX: change notification translation
+  const smsText = getNotificationText(notifications.fr.contract_subscription, {
+    customer_last_name: user.name,
+    type_of_saving: saving_type,
+    date_of_beginning: firstPaymentDate,
+    date_of_end: endDate,
+    amount: (amount ?? 0).toFixed(7),
+    total_ammount_to_save_during_contract: (
+      intervals.length * (amount ?? 0)
+    ).toFixed(7),
+  });
+
+  try {
+    await sendSMS(user.dial_code, user.phone_number, smsText);
+  } catch (error) {
+    console.error(
+      `Error sending create contract SMS to: ${user.dial_code} ${user.phone_number}, error: ${error}`
+    );
+  }
+
+  return res.status(201).json({
+    contract: contract,
+    message: 'Successfully created contract',
+    status: 'status',
+  });
 }
 
 /**
