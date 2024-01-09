@@ -319,7 +319,7 @@ async function handleSendPayment(req, res) {
     await sendSMS(smsData.dial_code, smsData.phone_number, smsData.text);
   } catch (error) {
     console.error(
-      `Error sending payment SMS to: ${user.dial_code} ${user.phone_number}, error: ${error}`
+      `Error sending payment SMS to: ${smsData.dial_code} ${smsData.phone_number}, error: ${error}`
     );
   }
 
