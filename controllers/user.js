@@ -1,6 +1,6 @@
 const StellarSdk = require('stellar-sdk');
 const { request, response } = require('express');
-const { parse } = require('date-fns');
+const { parse, format } = require('date-fns');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
@@ -350,7 +350,7 @@ async function handleCreateContractUser(req, res) {
 
   const intervals = getContractIntervals(
     saving_type,
-    firstPaymentDate,
+    first_payment_date,
     endDate
   );
 
@@ -358,12 +358,10 @@ async function handleCreateContractUser(req, res) {
   const smsText = getNotificationText(notifications.fr.contract_subscription, {
     customer_last_name: user.name,
     type_of_saving: saving_type,
-    date_of_beginning: firstPaymentDate,
-    date_of_end: endDate,
-    amount: (amount ?? 0).toFixed(7),
-    total_ammount_to_save_during_contract: (
-      intervals.length * (amount ?? 0)
-    ).toFixed(7),
+    date_of_beginning: format(first_payment_date, 'dd/MM/yyy'),
+    date_of_end: format(endDate, 'dd/MM/yyy'),
+    amount: amount ?? 0,
+    total_ammount_to_save_during_contract: intervals.length * (amount ?? 0),
   });
 
   try {
