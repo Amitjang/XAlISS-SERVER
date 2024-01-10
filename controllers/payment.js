@@ -292,16 +292,15 @@ async function handleSendPayment(req, res) {
         (acc, cur) => (isAfter(cur, nextPaymentDate) ? acc + 1 : acc),
         0
       );
-      const total_amount_saved_by_end_of_contract = (
-        intervals.length * (amount ?? 0)
-      ).toFixed(7);
+      const total_amount_saved_by_end_of_contract =
+        intervals.length * (amount ?? 0);
 
       smsData.dial_code = receiver.dial_code;
       smsData.phone_number = receiver.phone_number;
       // FIX: notification language according to reciever
       smsData.text = getNotificationText(notifications.fr.saving_collection, {
         customer_last_name: receiver.name,
-        amount_collected: (amount ?? 0).toFixed(7),
+        amount_collected: amount ?? 0,
         account_balance: account_balance,
         number_of_collect_remaining: collectRemaining,
         total_ammount_saved_by_end_of_contract:
@@ -310,7 +309,7 @@ async function handleSendPayment(req, res) {
       });
     } else {
       smsData.text = getNotificationText(notifications.fr.send_money, {
-        amount: (amount ?? 0).toFixed(7),
+        amount: amount ?? 0,
         sender_phone_number: `${sender.dial_code} ${sender.phone_number}`,
         transfer_purpose: purpose,
         balance: account_balance,
