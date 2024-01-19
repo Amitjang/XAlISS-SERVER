@@ -8,58 +8,60 @@ datasource db {
 }
 
 model users {
-  id                           Int      @id @default(autoincrement())
+  id                           Int         @id @default(autoincrement())
   agent_id                     Int?
-  name                         String?  @db.VarChar(255)
-  dial_code                    String?  @db.VarChar(15)
-  phone_number                 String?  @db.VarChar(50)
-  address                      String?  @db.VarChar(255)
-  country                      String?  @db.VarChar(255)
-  state                        String?  @db.VarChar(255)
-  city                         String?  @db.VarChar(255)
-  pincode                      String?  @db.VarChar(30)
-  lat                          Float?   @db.Float
-  lng                          Float?   @db.Float
-  account_id                   String?  @db.VarChar(255)
-  account_secret               String?  @db.VarChar(255)
-  verification_number          String?  @db.VarChar(255)
-  verification_proof_image_url String?  @db.VarChar(255)
-  device_token                 String   @default("") @db.VarChar(400)
-  device_type                  String   @default("") @db.VarChar(255)
-  created_at                   DateTime @default(now()) @db.Timestamp(0)
-  updated_at                   DateTime @default(now()) @db.Timestamp(0)
+  name                         String?     @db.VarChar(255)
+  dial_code                    String?     @db.VarChar(15)
+  phone_number                 String?     @db.VarChar(50)
+  address                      String?     @db.VarChar(255)
+  country                      String?     @db.VarChar(255)
+  state                        String?     @db.VarChar(255)
+  city                         String?     @db.VarChar(255)
+  pincode                      String?     @db.VarChar(30)
+  lat                          Float?      @db.Float
+  lng                          Float?      @db.Float
+  account_id                   String?     @db.VarChar(255)
+  account_secret               String?     @db.VarChar(255)
+  verification_number          String?     @db.VarChar(255)
+  verification_proof_image_url String?     @db.VarChar(255)
+  device_token                 String      @default("") @db.VarChar(400)
+  device_type                  String      @default("") @db.VarChar(255)
+  created_at                   DateTime    @default(now()) @db.Timestamp(0)
+  updated_at                   DateTime    @default(now()) @db.Timestamp(0)
+  contracts                    contracts[]
 }
 
 model agents {
-  id                           Int      @id @default(autoincrement())
-  account_id                   String   @default("") @db.VarChar(100)
-  account_secret               String   @default("") @db.VarChar(100)
-  bonus_wallet_public_key      String   @default("") @db.VarChar(100)
-  bonus_wallet_secret_key      String   @default("") @db.VarChar(100)
-  dial_code                    String   @default("") @db.VarChar(15)
-  phone_number                 String   @default("") @db.VarChar(50)
-  name                         String   @default("") @db.VarChar(100)
-  email                        String   @default("") @db.VarChar(255)
-  address                      String   @default("") @db.VarChar(255)
-  country                      String   @default("") @db.VarChar(50)
-  state                        String   @default("") @db.VarChar(50)
-  city                         String   @default("") @db.VarChar(50)
-  pincode                      String   @default("") @db.VarChar(50)
-  lat                          Float    @default(0)
-  lng                          Float    @default(0)
-  pin                          String   @default("") @db.VarChar(255)
-  gender                       String   @default("") @db.VarChar(50)
-  occupation                   String   @default("") @db.VarChar(100)
-  relative_dial_code           String   @default("") @db.VarChar(15)
-  relative_phone_number        String   @default("") @db.VarChar(50)
-  verification_number          String   @default("") @db.VarChar(255)
-  date_of_birth                String   @default("") @db.VarChar(10)
-  transaction_pin              String   @default("") @db.VarChar(255)
-  verification_proof_image_url String?  @db.VarChar(255)
-  device_token                 String   @default("") @db.VarChar(400)
-  device_type                  String   @default("") @db.VarChar(255)
-  created_at                   DateTime @default(now()) @db.Timestamp(0)
-  updated_at                   DateTime @default(now()) @db.Timestamp(0)
+  id                           Int         @id @default(autoincrement())
+  account_id                   String      @default("") @db.VarChar(100)
+  account_secret               String      @default("") @db.VarChar(100)
+  bonus_wallet_public_key      String      @default("") @db.VarChar(100)
+  bonus_wallet_secret_key      String      @default("") @db.VarChar(100)
+  dial_code                    String      @default("") @db.VarChar(15)
+  phone_number                 String      @default("") @db.VarChar(50)
+  name                         String      @default("") @db.VarChar(100)
+  email                        String      @default("") @db.VarChar(255)
+  address                      String      @default("") @db.VarChar(255)
+  country                      String      @default("") @db.VarChar(50)
+  state                        String      @default("") @db.VarChar(50)
+  city                         String      @default("") @db.VarChar(50)
+  pincode                      String      @default("") @db.VarChar(50)
+  lat                          Float       @default(0)
+  lng                          Float       @default(0)
+  pin                          String      @default("") @db.VarChar(255)
+  gender                       String      @default("") @db.VarChar(50)
+  occupation                   String      @default("") @db.VarChar(100)
+  relative_dial_code           String      @default("") @db.VarChar(15)
+  relative_phone_number        String      @default("") @db.VarChar(50)
+  verification_number          String      @default("") @db.VarChar(255)
+  date_of_birth                String      @default("") @db.VarChar(10)
+  transaction_pin              String      @default("") @db.VarChar(255)
+  verification_proof_image_url String?     @db.VarChar(255)
+  device_token                 String      @default("") @db.VarChar(400)
+  device_type                  String      @default("") @db.VarChar(255)
+  created_at                   DateTime    @default(now()) @db.Timestamp(0)
+  updated_at                   DateTime    @default(now()) @db.Timestamp(0)
+  contracts                    contracts[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -82,6 +84,11 @@ model contracts {
   is_cancelled        Int?      @default(0) @db.TinyInt
   created_at          DateTime  @default(now()) @db.Timestamp(0)
   updated_at          DateTime  @default(now()) @db.Timestamp(0)
+  agents              agents?   @relation(fields: [agent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "agent_id")
+  users               users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_id")
+
+  @@index([agent_id], map: "agent_id")
+  @@index([user_id], map: "user_id")
 }
 
 model transactions {
@@ -92,6 +99,7 @@ model transactions {
   receiver_id   Int
   receiver_type Int      @default(2)
   amount        Float?   @db.Float
+  type          String   @default("") @db.VarChar(255)
   created_at    DateTime @default(now()) @db.Timestamp(0)
   updated_at    DateTime @default(now()) @db.Timestamp(0)
 }

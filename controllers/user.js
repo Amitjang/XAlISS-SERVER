@@ -1,6 +1,6 @@
 const StellarSdk = require('stellar-sdk');
 const { request, response } = require('express');
-const { parse, format } = require('date-fns');
+const { parse, format, isToday } = require('date-fns');
 
 const server = require('../services/stellar');
 const prisma = require('../services/prisma');
@@ -14,6 +14,8 @@ const {
   xoftAsset,
   CREATE_ACCOUNT_PUBLIC_KEY,
   CREATE_ACCOUNT_SECRET_KEY,
+  transactionTypes,
+  userTypes,
 } = require('../constants');
 const {
   getStellarAccount,
@@ -316,6 +318,35 @@ async function handleCreateContractUser(req, res) {
     getSavingAndWithdrawTypeForContractType(contractType);
   const endDate = getEndDateForContractType(contractType, first_payment_date);
 
+  // if today is the first payment date
+  // and the agent does not have sufficient funds
+  // we throw out error
+  if (isToday(first_payment_date)) {
+    try {
+      const agentPrimaryWallet = await getStellarAccount(agent.account_id);
+      const xoftBalance =
+        agentPrimaryWallet.balances.find(i => i.asset_code === 'XOFT')
+          ?.balance ?? 0;
+      if (parseFloat(xoftBalance) < amount) {
+        throw new CustomError({
+          code: 400,
+          message: 'You do not have sufficient funds to create contract',
+        });
+      }
+    } catch (error) {
+      if (error instanceof CustomError)
+        return res
+          .status(error.code)
+          .json({ message: error.message, status: 'error' });
+      else
+        return res.status(500).json({
+          message: 'Internal server error',
+          status: 'error',
+          error: error,
+        });
+    }
+  }
+
   let contract;
   try {
     contract = await prisma.contracts.create({
@@ -346,6 +377,22 @@ async function handleCreateContractUser(req, res) {
       message: error?.message ?? 'Something went wrong!',
       status: 'error',
     });
+  }
+
+  try {
+    await prisma.transactions.create({
+      data: {
+        contract_id: contract.id,
+        type: transactionTypes.contractCreate,
+        sender_type: userTypes.Agent,
+        sender_id: agent.id,
+        receiver_type: userTypes.User,
+        receiver_id: user.id,
+        amount: parseFloat(amount),
+      },
+    });
+  } catch (error) {
+    console.error('Error creating a transaction, error:', error);
   }
 
   const intervals = getContractIntervals(

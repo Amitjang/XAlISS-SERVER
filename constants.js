@@ -93,6 +93,12 @@ const savingFees = {
   monthly: 3.0,
 };
 
+const transactionTypes = {
+  contractCreate: 'CONTRACT_CREATE',
+  saveCollect: 'SAVE_COLLECT',
+  payment: 'PAYMENT',
+};
+
 const COMPANY_WALLET_PUBLIC_KEY = process.env.COMPANY_WALLET_PUBLIC_KEY;
 const COMPANY_WALLET_SECRET_KEY = process.env.COMPANY_WALLET_SECRET_KEY;
 
@@ -122,4 +128,6 @@ module.exports = {
   CREATE_ACCOUNT_SECRET_KEY,
 
   SEND_SMS_URL,
+
+  transactionTypes,
 };

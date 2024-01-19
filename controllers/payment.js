@@ -8,13 +8,14 @@ const {
   set,
   format,
   isAfter,
+  startOfToday,
 } = require('date-fns');
 
 const prisma = require('../services/prisma');
 const server = require('../services/stellar');
 
 const CustomError = require('../utils/CustomError');
-const { xoftAsset, userTypes } = require('../constants');
+const { xoftAsset, userTypes, transactionTypes } = require('../constants');
 const getContractIntervals = require('../utils/getContractIntervals');
 const { getStellarAccount } = require('../utils/createStellarAccount');
 const { sendSMS } = require('../utils/sendSMS');
@@ -128,6 +129,8 @@ async function handleSendPayment(req, res) {
     sender_type: userTypes[senderAndReceiverType.sender],
     receiver_id: receiver.id,
     receiver_type: userTypes[senderAndReceiverType.receiver],
+
+    type: transactionTypes.payment,
   };
 
   let intervals;
@@ -143,6 +146,7 @@ async function handleSendPayment(req, res) {
     contractId !== undefined &&
     contractId !== null
   ) {
+    txn.type = transactionTypes.saveCollect;
     try {
       const contract = await prisma.contracts.findFirst({
         where: { id: parseInt(contractId, 10) },
@@ -234,7 +238,8 @@ async function handleSendPayment(req, res) {
   // Start building the transaction.
   try {
     const transaction = new StellarSdk.TransactionBuilder(senderAcc, {
-      fee: StellarSdk.BASE_FEE,
+      // TODO: Fix the base fee
+      fee: '20000',
       networkPassphrase: StellarSdk.Networks.PUBLIC,
     })
       .addOperation(
@@ -308,6 +313,9 @@ async function handleSendPayment(req, res) {
         date_of_next_collect: format(nextCollectDate, 'dd/MM/yyy'),
       });
     } else {
+      smsData.dial_code = receiver.dial_code;
+      smsData.phone_number = receiver.phone_number;
+      // FIX: notification language according to reciever
       smsData.text = getNotificationText(notifications.fr.send_money, {
         amount: amount ?? 0,
         sender_phone_number: `${sender.dial_code} ${sender.phone_number}`,
@@ -368,6 +376,7 @@ async function handleGetTodayPendingCollections(req, res) {
   try {
     contracts = await prisma.contracts.findMany({
       where: { agent_id: agent.id, end_date: { gte: today }, is_cancelled: 0 },
+      include: { users: { select: { name: true } } },
     });
   } catch (error) {
     return res.status(500).json({
