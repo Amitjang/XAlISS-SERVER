@@ -331,6 +331,19 @@ const getAgentNotificationsSchema = z.object({
   }),
 });
 
+const getAgentSubscribedContracts = z.object({
+  params: z.object({
+    agentId: z
+      .number({
+        coerce: true,
+        invalid_type_error: 'agentId must be a number',
+        required_error: 'agentId is required',
+      })
+      .int('agentId must be an integer')
+      .positive('agentId must be a positive integer'),
+  }),
+});
+
 module.exports = {
   createAccountSchema: createAgentSchema,
   getAccountSchema: getAgentSchema,
@@ -341,4 +354,5 @@ module.exports = {
   getUsersByAgentIdSchema,
   getAgentTransactionsSchema,
   getAgentNotificationsSchema,
+  getAgentSubscribedContracts,
 };
