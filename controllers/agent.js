@@ -537,6 +537,9 @@ async function handleGetAgentTransactions(req, res) {
           { sender_id: agent.id, sender_type: 1 },
         ],
       },
+      orderBy: {
+        created_at: 'desc',
+      },
     });
 
     const usersIds = [];
@@ -645,6 +648,64 @@ async function handleGetAgentNotifications(req, res) {
   });
 }
 
+/**
+ * Get Agents Subscribed Contracts
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetAgentSubscribedContracts(req, res) {
+  const agentId = parseInt(req.params.agentId, 10);
+
+  try {
+    const agent = await prisma.agents.findFirst({ where: { id: agentId } });
+    if (!agent)
+      throw new CustomError({
+        code: 404,
+        message: `No agent found for id: ${agentId}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res.status(error.code).json({
+        message: error.message,
+        status: 'error',
+      });
+
+    return res.status(500).json({
+      message: 'Error getting agent subscribed contracts',
+      status: 'error',
+      error: error,
+    });
+  }
+
+  let contracts;
+  try {
+    contracts = await prisma.contracts.findMany({
+      where: {
+        agent_id: agentId,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting agent subscribed contracts',
+      status: 'error',
+      error: error,
+    });
+  }
+
+  const contractsRes = [];
+  for (const contract of contracts) {
+    const newContract = contract;
+    newContract.user_sign_image_url = `/images/users/signature/${newContract.user_sign_image_url}`;
+    contractsRes.push(newContract);
+  }
+
+  return res.status(200).json({
+    contracts: contractsRes,
+    message: 'Successfully fetched subscribed contracts',
+    status: 'success',
+  });
+}
+
 module.exports = {
   handleCreateAccount: handleCreateAgent,
   handleGetAccount: handleGetAgent,
@@ -655,4 +716,5 @@ module.exports = {
   handleGetUsersByAgentId,
   handleGetAgentTransactions,
   handleGetAgentNotifications,
+  handleGetAgentSubscribedContracts,
 };
