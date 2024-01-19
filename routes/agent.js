@@ -10,6 +10,7 @@ const {
   handleGetUsersByAgentId,
   handleGetAgentTransactions,
   handleGetAgentNotifications,
+  handleGetAgentSubscribedContracts,
 } = require('../controllers/agent');
 
 const { upload } = require('../services/multer');
@@ -23,6 +24,7 @@ const {
   setNewPinAgentSchema,
   getUsersByAgentIdSchema,
   getAgentTransactionsSchema,
+  getAgentSubscribedContracts,
 } = require('../validators/agent');
 const validate = require('../middleware/validate');
 
@@ -62,5 +64,10 @@ router.post(
   handleGetAgentSecretKey
 );
 router.get('/notifications/:agentId', handleGetAgentNotifications);
+router.get(
+  '/:agentId/contracts',
+  validate(getAgentSubscribedContracts),
+  handleGetAgentSubscribedContracts
+);
 
 module.exports = router;
