@@ -40,7 +40,7 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/health', healthRouter);
 
-app.use('/images', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, '../', 'uploads')));
 
 // Start the sendBonus scheduler
 initializeFirebaseApp();
