@@ -65,7 +65,7 @@ router.post(
 );
 router.get('/notifications/:agentId', handleGetAgentNotifications);
 router.get(
-  '/:agentId/contracts',
+  '/:agentId/:userId/contracts',
   validate(getAgentSubscribedContracts),
   handleGetAgentSubscribedContracts
 );

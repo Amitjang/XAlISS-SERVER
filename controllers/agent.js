@@ -580,6 +580,7 @@ async function handleGetAgentTransactions(req, res) {
         contract_id: txn.contract_id,
         amount: txn.amount,
         created_at: txn.created_at,
+        type: txn.type,
       };
       // sender can be agent or user
       if (txn.sender_type === 1)
@@ -655,6 +656,7 @@ async function handleGetAgentNotifications(req, res) {
  */
 async function handleGetAgentSubscribedContracts(req, res) {
   const agentId = parseInt(req.params.agentId, 10);
+  const userId = parseInt(req.params.userId, 10);
 
   try {
     const agent = await prisma.agents.findFirst({ where: { id: agentId } });
@@ -677,11 +679,33 @@ async function handleGetAgentSubscribedContracts(req, res) {
     });
   }
 
+  try {
+    const user = await prisma.users.findFirst({ where: { id: userId } });
+    if (!user)
+      throw new CustomError({
+        code: 404,
+        message: `No user found for id: ${userId}`,
+      });
+  } catch (error) {
+    if (error instanceof CustomError)
+      return res.status(error.code).json({
+        message: error.message,
+        status: 'error',
+      });
+
+    return res.status(500).json({
+      message: 'Error getting user info',
+      status: 'error',
+      error: error,
+    });
+  }
+
   let contracts;
   try {
     contracts = await prisma.contracts.findMany({
       where: {
         agent_id: agentId,
+        user_id: userId,
       },
     });
   } catch (error) {
