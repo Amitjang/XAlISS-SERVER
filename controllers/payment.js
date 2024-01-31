@@ -239,7 +239,7 @@ async function handleSendPayment(req, res) {
   try {
     const transaction = new StellarSdk.TransactionBuilder(senderAcc, {
       // TODO: Fix the base fee
-      fee: '1000',
+      fee: '20000',
       networkPassphrase: StellarSdk.Networks.PUBLIC,
     })
       .addOperation(
