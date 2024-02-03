@@ -305,6 +305,66 @@ async function handleGetTotalCashCollectedByDate(req, res) {
   });
 }
 
+/**
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetCustomersTotalAccountBalance(req, res) {
+  let data;
+  try {
+    data = await prisma.$queryRaw`
+      SELECT SUM(account_balance) as total_balance
+      FROM users`;
+
+    data = data.map(item => ({
+      ...item,
+      total_balance: Number(item.total_balance),
+    }));
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting total customer account balance',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    message: 'Successfully fetched Total customers account balance',
+    status: 'success',
+    data: data,
+  });
+}
+
+/**
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetAgentsTotalAccountBalance(req, res) {
+  let data;
+  try {
+    data = await prisma.$queryRaw`
+      SELECT SUM(account_balance) as total_balance
+      FROM agents`;
+
+    data = data.map(item => ({
+      ...item,
+      total_balance: Number(item.total_balance),
+    }));
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting total agent account balance',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    message: 'Successfully fetched total agent account balance',
+    status: 'success',
+    data: data,
+  });
+}
+
 module.exports = {
   handleLogin,
   handleGetTotalCustomersCount,
@@ -314,4 +374,6 @@ module.exports = {
   handleGetTotalPayoutsToday,
   handleGetCustomersRegisteredByDate,
   handleGetTotalCashCollectedByDate,
+  handleGetCustomersTotalAccountBalance,
+  handleGetAgentsTotalAccountBalance,
 };

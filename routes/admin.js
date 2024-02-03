@@ -8,6 +8,8 @@ const {
   handleGetCustomersRegisteredByDate,
   handleGetTotalCashCollectedByDate,
   handleLogin,
+  handleGetCustomersTotalAccountBalance,
+  handleGetAgentsTotalAccountBalance,
 } = require('../controllers/admin');
 
 const { loginAdminSchema } = require('../validators/admin');
@@ -25,9 +27,15 @@ router.get(
   handleGetCustomersRegisteredTodayCount
 );
 router.get('/customers/registered-by-date', handleGetCustomersRegisteredByDate);
+router.get(
+  '/customers/total-account-balance',
+  handleGetCustomersTotalAccountBalance
+);
 router.get('/contracts/active', handleGetTotalActiveContractsCount);
 router.get('/collection/today', handleGetTotalCashCollectedToday);
 router.get('/collection/by-date', handleGetTotalCashCollectedByDate);
 router.get('/payouts/today', handleGetTotalPayoutsToday);
+
+router.get('/agents/total-account-balance', handleGetAgentsTotalAccountBalance);
 
 module.exports = router;
