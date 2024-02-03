@@ -21,6 +21,7 @@ const { getStellarAccount } = require('../utils/createStellarAccount');
 const { sendSMS } = require('../utils/sendSMS');
 const { getNotificationText } = require('../utils/getNotificationText');
 const { notifications } = require('../notifications');
+const { updateAccountBalances } = require('../utils/updateAccountBalances');
 
 async function handleSendPayment(req, res) {
   const {
@@ -273,6 +274,23 @@ async function handleSendPayment(req, res) {
     // If the result is unknown (no response body, timeout etc.) we simply resubmit
     // already built transaction:
     // server.submitTransaction(transaction);
+  }
+
+  try {
+    await updateAccountBalances({
+      senderId: sender.id,
+      recieverId: receiver.id,
+      amount: Number(amount),
+      senderType: senderAndReceiverType.sender,
+      recieverType: senderAndReceiverType.receiver,
+    });
+  } catch (error) {
+    console.log('Error updating account balances,', error);
+    return res.status(500).json({
+      message: 'Error updating account balances',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
   }
 
   const smsData = {
