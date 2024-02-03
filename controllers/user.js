@@ -144,6 +144,7 @@ async function handleCreateUser(req, res) {
 
         account_id: pair.publicKey().trim(),
         account_secret: pair.secret().trim(),
+        account_balance: 0,
 
         name: name.trim(),
         dial_code: dialCode.trim(),

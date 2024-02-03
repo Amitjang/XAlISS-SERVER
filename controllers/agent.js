@@ -180,6 +180,7 @@ async function handleCreateAgent(req, res) {
       data: {
         account_id: primaryAccount.id,
         account_secret: primaryWalletKeyPair.secret(),
+        account_balance: 0,
         dial_code: dialCode.trim(),
         phone_number: phoneNumber.trim(),
         name: name.trim(),
