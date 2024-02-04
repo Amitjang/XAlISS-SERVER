@@ -10,6 +10,8 @@ const {
   handleLogin,
   handleGetCustomersTotalAccountBalance,
   handleGetAgentsTotalAccountBalance,
+  handleGetTotalFeesThisMonth,
+  handleGetTotalAmountAtTermInNetwork,
 } = require('../controllers/admin');
 
 const { loginAdminSchema } = require('../validators/admin');
@@ -32,8 +34,15 @@ router.get(
   handleGetCustomersTotalAccountBalance
 );
 router.get('/contracts/active', handleGetTotalActiveContractsCount);
+router.get(
+  '/contracts/total-amount-in-term',
+  handleGetTotalAmountAtTermInNetwork
+);
+
 router.get('/collection/today', handleGetTotalCashCollectedToday);
 router.get('/collection/by-date', handleGetTotalCashCollectedByDate);
+router.get('/collection/this-month', handleGetTotalFeesThisMonth);
+
 router.get('/payouts/today', handleGetTotalPayoutsToday);
 
 router.get('/agents/total-account-balance', handleGetAgentsTotalAccountBalance);

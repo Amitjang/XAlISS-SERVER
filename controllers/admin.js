@@ -1,11 +1,13 @@
 const { request, response } = require('express');
 const { startOfToday, endOfToday, addMilliseconds } = require('date-fns');
 const { compare } = require('bcryptjs');
+const { startOfMonth } = require('date-fns');
 
 const prisma = require('../services/prisma');
 
 const CustomError = require('../utils/CustomError');
 const Admin = require('../models/Admin');
+const { transactionTypes } = require('../constants');
 
 /**
  * Login Admin
@@ -365,6 +367,67 @@ async function handleGetAgentsTotalAccountBalance(req, res) {
   });
 }
 
+/**
+ * Get the total fees that was collected this month
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetTotalFeesThisMonth(req, res) {
+  const startOfThisMonth = startOfMonth(new Date());
+
+  let data;
+  try {
+    data = await prisma.$queryRaw`
+      SELECT SUM(amount) as total_fees
+      FROM transactions
+      WHERE type = ${transactionTypes.saveCollect}
+      AND created_at >= ${startOfThisMonth}`;
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: 'Error getting total fees this month',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    message: 'Succesfully fetched total fees this month',
+    status: 'success',
+    data: data,
+  });
+}
+
+/**
+ * Get total amount at term in network
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetTotalAmountAtTermInNetwork(req, res) {
+  const startOfThisMonth = startOfMonth(new Date());
+
+  let data;
+  try {
+    data = await prisma.$queryRaw`
+      SELECT SUM(amount) as total_term
+      FROM contracts
+      WHERE end_date >= ${startOfThisMonth}`;
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: 'Error getting total amount at term in network',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    message: 'Succesfully fetched total amount at term in network',
+    status: 'success',
+    data: data,
+  });
+}
+
 module.exports = {
   handleLogin,
   handleGetTotalCustomersCount,
@@ -376,4 +439,6 @@ module.exports = {
   handleGetTotalCashCollectedByDate,
   handleGetCustomersTotalAccountBalance,
   handleGetAgentsTotalAccountBalance,
+  handleGetTotalFeesThisMonth,
+  handleGetTotalAmountAtTermInNetwork,
 };
