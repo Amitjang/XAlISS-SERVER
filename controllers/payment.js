@@ -23,6 +23,12 @@ const { getNotificationText } = require('../utils/getNotificationText');
 const { notifications } = require('../notifications');
 const { updateAccountBalances } = require('../utils/updateAccountBalances');
 
+/**
+ * Sends payment from one entity to another, entity can be agent or customer
+ * if a contractId is specified it for saving a collection
+ * @param {request} req Request
+ * @param {response} res Response
+ */
 async function handleSendPayment(req, res) {
   const {
     senderDialCode,
@@ -34,8 +40,6 @@ async function handleSendPayment(req, res) {
     purpose,
     contractId,
   } = req.body;
-
-  console.log(purpose);
 
   const senderAndReceiverType = {
     sender: 'Agent',
@@ -149,6 +153,7 @@ async function handleSendPayment(req, res) {
   ) {
     txn.type = transactionTypes.saveCollect;
     try {
+      const today = startOfToday();
       const contract = await prisma.contracts.findFirst({
         where: { id: parseInt(contractId, 10) },
       });
@@ -165,15 +170,17 @@ async function handleSendPayment(req, res) {
         });
       }
 
+      if (isAfter(today, contract.end_date))
+        throw new CustomError({
+          code: 401,
+          message: 'Cannot collect, contract has ended',
+        });
+
       intervals = getContractIntervals(
         contract.saving_type,
         contract.first_payment_date,
         contract.end_date
       );
-
-      const today = new Date();
-      today.setHours(0, 0, 0);
-
       nextPaymentDate = closestTo(today, intervals);
 
       if (isToday(nextPaymentDate)) {
@@ -184,6 +191,8 @@ async function handleSendPayment(req, res) {
             message: `Already paid for ${nextPaymentDate.toLocaleDateString()} collection`,
           });
         else txn.contract_id = contract.id;
+      } else {
+        // FIXME: payment date not for today
       }
     } catch (error) {
       if (error instanceof CustomError)
