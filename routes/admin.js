@@ -12,9 +12,15 @@ const {
   handleGetAgentsTotalAccountBalance,
   handleGetTotalFeesThisMonth,
   handleGetTotalAmountAtTermInNetwork,
+  handleGetLatestRegisteredUsers,
+  handleGetLatestTransactionHistory,
 } = require('../controllers/admin');
 
-const { loginAdminSchema } = require('../validators/admin');
+const {
+  loginAdminSchema,
+  getLatestRegisteredUsersSchema,
+  getLatestTransactionHistorySchema,
+} = require('../validators/admin');
 
 const validate = require('../middleware/validate');
 
@@ -33,6 +39,12 @@ router.get(
   '/customers/total-account-balance',
   handleGetCustomersTotalAccountBalance
 );
+router.get(
+  '/customers/latest-registered',
+  validate(getLatestRegisteredUsersSchema),
+  handleGetLatestRegisteredUsers
+);
+
 router.get('/contracts/active', handleGetTotalActiveContractsCount);
 router.get(
   '/contracts/total-amount-in-term',
@@ -46,5 +58,11 @@ router.get('/collection/this-month', handleGetTotalFeesThisMonth);
 router.get('/payouts/today', handleGetTotalPayoutsToday);
 
 router.get('/agents/total-account-balance', handleGetAgentsTotalAccountBalance);
+
+router.get(
+  '/transactions/latest',
+  validate(getLatestTransactionHistorySchema),
+  handleGetLatestTransactionHistory
+);
 
 module.exports = router;

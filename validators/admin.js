@@ -48,4 +48,24 @@ const loginAdminSchema = z.object({
     ),
 });
 
-module.exports = { loginAdminSchema };
+const getLatestRegisteredUsersSchema = z.object({
+  query: z.object({
+    limit: z
+      .number({ invalid_type_error: 'limit must be a number', coerce: true })
+      .nullish(),
+  }),
+});
+
+const getLatestTransactionHistorySchema = z.object({
+  query: z.object({
+    limit: z
+      .number({ invalid_type_error: 'limit must be a number', coerce: true })
+      .nullish(),
+  }),
+});
+
+module.exports = {
+  loginAdminSchema,
+  getLatestRegisteredUsersSchema,
+  getLatestTransactionHistorySchema,
+};

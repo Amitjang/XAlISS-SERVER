@@ -428,6 +428,74 @@ async function handleGetTotalAmountAtTermInNetwork(req, res) {
   });
 }
 
+/**
+ * Get the latest registered users
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetLatestRegisteredUsers(req, res) {
+  let limit = Number(req.query.limit ?? 0);
+  let latestRegisteredUsers;
+
+  // if limit is not present or equal to 0, return the 10 latest
+  if (limit === 0) limit = 10;
+  else limit = Math.abs(limit);
+
+  try {
+    latestRegisteredUsers = await prisma.users.findMany({
+      orderBy: { created_at: 'desc' },
+      take: limit,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting latest registered users',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    length: latestRegisteredUsers.length,
+    data: latestRegisteredUsers,
+    message: 'Successfully fetched latest registered users',
+    status: 'success',
+  });
+}
+
+/**
+ * Get the latest latest users
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetLatestTransactionHistory(req, res) {
+  let limit = Number(req.query.limit ?? 0);
+  let latestTransactionHistory;
+
+  // if limit is not present or equal to 0, return the 10 latest
+  if (limit === 0) limit = 10;
+  else limit = Math.abs(limit);
+
+  try {
+    latestTransactionHistory = await prisma.transactions.findMany({
+      orderBy: { created_at: 'desc' },
+      take: limit,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting latest transaction history',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    length: latestTransactionHistory.length,
+    data: latestTransactionHistory,
+    message: 'Successfully fetched latest transaction history',
+    status: 'success',
+  });
+}
+
 module.exports = {
   handleLogin,
   handleGetTotalCustomersCount,
@@ -441,4 +509,6 @@ module.exports = {
   handleGetAgentsTotalAccountBalance,
   handleGetTotalFeesThisMonth,
   handleGetTotalAmountAtTermInNetwork,
+  handleGetLatestRegisteredUsers,
+  handleGetLatestTransactionHistory,
 };
