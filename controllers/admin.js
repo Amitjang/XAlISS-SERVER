@@ -7,7 +7,7 @@ const prisma = require('../services/prisma');
 
 const CustomError = require('../utils/CustomError');
 const Admin = require('../models/Admin');
-const { transactionTypes } = require('../constants');
+const { transactionTypes, userTypes } = require('../constants');
 
 /**
  * Login Admin
@@ -496,6 +496,113 @@ async function handleGetLatestTransactionHistory(req, res) {
   });
 }
 
+/**
+ * Get latest events, either user creation or transactions
+ * @param {request} req Request
+ * @param {response} res Response
+ */
+async function handleGetLatestEvents(req, res) {
+  let latestEvents = [];
+
+  try {
+    const users = await prisma.users.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 10,
+    });
+
+    const txns = await prisma.transactions.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 10,
+    });
+
+    for (const user of users) {
+      latestEvents.push({ type: 'USER_CREATE', data: user });
+    }
+
+    const agentsTxnsIds = [];
+    const usersTxnsIds = [];
+    for (const txn of txns) {
+      if (txn.sender_type === userTypes.Agent)
+        agentsTxnsIds.push(txn.sender_id);
+      else if (txn.sender_type === userTypes.User)
+        usersTxnsIds.push(txn.sender_id);
+
+      if (txn.receiver_type === userTypes.Agent)
+        agentsTxnsIds.push(txn.receiver_id);
+      else if (txn.receiver_type === userTypes.User)
+        usersTxnsIds.push(txn.receiver_id);
+    }
+
+    const usersFromTxns = (
+      await prisma.users.findMany({
+        where: { id: { in: usersTxnsIds } },
+        select: { id: true, dial_code: true, phone_number: true },
+      })
+    ).reduce((acc, cur) => {
+      acc[cur.id] = {
+        dial_code: cur.dial_code,
+        phone_number: cur.phone_number,
+      };
+      return acc;
+    }, {});
+    const agentsFromTxns = (
+      await prisma.agents.findMany({
+        where: { id: { in: agentsTxnsIds } },
+        select: { id: true, dial_code: true, phone_number: true },
+      })
+    ).reduce((acc, cur) => {
+      acc[cur.id] = {
+        dial_code: cur.dial_code,
+        phone_number: cur.phone_number,
+      };
+      return acc;
+    }, {});
+
+    for (const txn of txns) {
+      const txnData = {
+        id: txn.id,
+        contract_id: txn.contract_id,
+        amount: txn.amount,
+        type: txn.type,
+        created_at: txn.created_at,
+        updated_at: txn.updated_at,
+      };
+
+      if (txn.sender_type === userTypes.Agent)
+        txnData.sender = agentsFromTxns[txn.sender_id];
+      else if (txn.sender_type === userTypes.User)
+        txnData.sender = usersFromTxns[txn.sender_id];
+
+      if (txn.receiver_type === userTypes.Agent)
+        txnData.receiver = agentsFromTxns[txn.receiver_id];
+      else if (txn.receiver_type === userTypes.User)
+        txnData.receiver = usersFromTxns[txn.receiver_id];
+
+      latestEvents.push({
+        type: 'TRANSACTION',
+        data: txnData,
+      });
+    }
+
+    latestEvents = latestEvents.sort((a, b) =>
+      b.data.created_at > a.data.created_at ? 1 : -1
+    );
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: 'Error getting latest events',
+      status: 'error',
+      error: JSON.stringify(error),
+    });
+  }
+
+  return res.status(200).json({
+    data: latestEvents,
+    message: 'Successfully fetched latest events',
+    status: 'success',
+  });
+}
+
 module.exports = {
   handleLogin,
   handleGetTotalCustomersCount,
@@ -511,4 +618,5 @@ module.exports = {
   handleGetTotalAmountAtTermInNetwork,
   handleGetLatestRegisteredUsers,
   handleGetLatestTransactionHistory,
+  handleGetLatestEvents,
 };

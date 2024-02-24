@@ -14,6 +14,7 @@ const {
   handleGetTotalAmountAtTermInNetwork,
   handleGetLatestRegisteredUsers,
   handleGetLatestTransactionHistory,
+  handleGetLatestEvents,
 } = require('../controllers/admin');
 
 const {
@@ -64,5 +65,7 @@ router.get(
   validate(getLatestTransactionHistorySchema),
   handleGetLatestTransactionHistory
 );
+
+router.get('/latest-events', handleGetLatestEvents);
 
 module.exports = router;
