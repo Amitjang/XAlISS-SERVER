@@ -294,7 +294,7 @@ async function handleSendPayment(req, res) {
       recieverType: senderAndReceiverType.receiver,
     });
   } catch (error) {
-    console.log('Error updating account balances,', error);
+    console.error('Error updating account balances,', error);
     return res.status(500).json({
       message: 'Error updating account balances',
       status: 'error',
@@ -429,7 +429,6 @@ async function handleGetTodayPendingCollections(req, res) {
       nextPaymentDate
     );
 
-    console.log(isNextPaymentDateDone);
     if (!isNextPaymentDateDone.isDone) collections.push(contract);
   }
 
@@ -450,6 +449,7 @@ async function isPaymentDone(contract_id, date) {
   const txn = await prisma.transactions.findFirst({
     where: {
       contract_id: contract_id,
+      type: transactionTypes.saveCollect,
       created_at: { gte: date, lte: dateBeforeMidnight },
     },
   });
@@ -580,10 +580,8 @@ async function handleSendPaymentToAgent(req, res) {
     transaction.sign(keyPair);
 
     const result = await server.submitTransaction(transaction);
-
-    console.log(result);
   } catch (error) {
-    console.log(error?.response?.data?.extras);
+    console.error(error?.response?.data?.extras);
     return res.status(500).json({ message: error, status: 'error' });
   }
 
