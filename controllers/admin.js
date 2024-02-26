@@ -435,18 +435,41 @@ async function handleGetTotalAmountAtTermInNetwork(req, res) {
  */
 async function handleGetLatestRegisteredUsers(req, res) {
   let limit = Number(req.query.limit ?? 0);
-  let latestRegisteredUsers;
+  let latestRegisteredUsers = [];
 
   // if limit is not present or equal to 0, return the 10 latest
   if (limit === 0) limit = 10;
   else limit = Math.abs(limit);
 
   try {
-    latestRegisteredUsers = await prisma.users.findMany({
+    const users = await prisma.users.findMany({
       orderBy: { created_at: 'desc' },
       take: limit,
     });
+    for (const user of users) {
+      const userData = {
+        id: user.id,
+        agent_id: user.agent_id,
+        name: user.name,
+        dial_code: user.dial_code,
+        phone_number: user.phone_number,
+        address: user.address,
+        country: user.country,
+        state: user.state,
+        city: user.city,
+        pincode: user.pincode,
+        lat: user.lat,
+        lng: user.lng,
+        account_balance: user.account_balance,
+        verification_number: user.verification_number,
+        verification_proof_image_url: user.verification_proof_image_url,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      };
+      latestRegisteredUsers.push(userData);
+    }
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       message: 'Error getting latest registered users',
       status: 'error',
@@ -455,7 +478,6 @@ async function handleGetLatestRegisteredUsers(req, res) {
   }
 
   return res.status(200).json({
-    length: latestRegisteredUsers.length,
     data: latestRegisteredUsers,
     message: 'Successfully fetched latest registered users',
     status: 'success',
@@ -516,7 +538,26 @@ async function handleGetLatestEvents(req, res) {
     });
 
     for (const user of users) {
-      latestEvents.push({ type: 'USER_CREATE', data: user });
+      const userData = {
+        id: user.id,
+        agent_id: user.agent_id,
+        name: user.name,
+        dial_code: user.dial_code,
+        phone_number: user.phone_number,
+        address: user.address,
+        country: user.country,
+        state: user.state,
+        city: user.city,
+        pincode: user.pincode,
+        lat: user.lat,
+        lng: user.lng,
+        account_balance: user.account_balance,
+        verification_number: user.verification_number,
+        verification_proof_image_url: user.verification_proof_image_url,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      };
+      latestEvents.push({ type: 'USER_CREATE', data: userData });
     }
 
     const agentsTxnsIds = [];
